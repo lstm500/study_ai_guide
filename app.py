@@ -1,7 +1,8 @@
 import base64
 import os
 import re
-from urllib.parse import quote_plus
+from html.parser import HTMLParser
+from urllib.request import Request, urlopen
 
 import streamlit as st
 
@@ -26,6 +27,11 @@ st.set_page_config(
 MEXT_URL = "https://www.mext.go.jp/a_menu/shotou/new-cs/1387014.htm"
 MEXT_MATH_PDF = "https://www.mext.go.jp/content/20211102-mxt_kyoiku02-100002607_04.pdf"
 EBOARD_URL = "https://www.eboard.jp/list/7/"
+OFFICIAL_PRACTICE = {
+    1: "https://www.dokyoi.pref.hokkaido.lg.jp/hk/gks/ct/tangen1.html",
+    2: "https://www.dokyoi.pref.hokkaido.lg.jp/hk/gks/ct/tangen2.html",
+    3: "https://www.dokyoi.pref.hokkaido.lg.jp/hk/gks/ct/tangen3.html",
+}
 
 UNITS = [
     # ------------------------- 小学1年 -------------------------
@@ -116,7 +122,7 @@ UNITS = [
         "point": "『丸い』『平ら』『転がる』『積める』など、見た目だけでなく形の特徴を言葉にします。",
         "prereq": "なし",
         "materials": [
-            {"kind": "youtube", "label": "福岡市教育委員会：小1算数 かたちづくり①", "url": "https://www.youtube.com/watch?v=PXB4zGO0SRQ"},
+            {"kind": "youtube", "label": "群馬県公式：小1算数 かたちをつくろう", "url": "https://www.youtube.com/watch?v=MIZ_BV45K6k"},
         ],
     },
     {
@@ -126,8 +132,9 @@ UNITS = [
         "point": "比べるときは『端をそろえる』『同じ大きさのものを基準にする』という公平な比較が中心です。",
         "prereq": "数を数える",
         "materials": [
-            {"kind": "youtube", "label": "福岡市教育委員会：小1算数 どちらがながい①", "url": "https://www.youtube.com/watch?v=DF19GXKvBB0"},
-            {"kind": "web", "label": "ロイロノート授業案：小1算数 おおきさくらべ等", "url": "https://help.loilonote.app/%E5%B0%8F%E5%AD%A6%EF%BC%91%E5%B9%B4%E7%AE%97%E6%95%B0"},
+            {"kind": "youtube", "label": "いばスタ小学校：小1 ながさくらべ・ひろさくらべ", "url": "https://www.youtube.com/watch?v=M2h_K3UXN4s"},
+            {"kind": "youtube", "label": "くろだちゃんねる：小1 かさくらべ", "url": "https://www.youtube.com/watch?v=EQFgCzqF8BQ"},
+            {"kind": "web", "label": "黒田教育研究所：小1算数 15分教材（ながさ・かさ・ひろさ）", "url": "https://www.kurodalab.jp/math_videos/15minutes/15minutes_1/"},
         ],
     },
     {
@@ -147,7 +154,8 @@ UNITS = [
         "point": "ばらばらのものを種類ごとに並べ、同じ大きさ・同じ間隔で表すと、どれが多いか見やすくなります。",
         "prereq": "数を数える、大小を比べる",
         "materials": [
-            {"kind": "web", "label": "ロイロノート授業案：かずしらべ", "url": "https://help.loilonote.app/--66ab077761be35001d279a8e"},
+            {"kind": "web", "label": "すたぺんドリル：小1 かずしらべ無料プリント", "url": "https://startoo.co/workbook/84511/"},
+            {"kind": "web", "label": "黒田教育研究所：小1 かずしらべ動画・プリント", "url": "https://www.kurodalab.jp/math_videos/15minutes/15minutes_1/"},
         ],
     },
 
@@ -295,7 +303,7 @@ UNITS = [
         "point": "表は数を正確に比べやすく、グラフは大小を見た目で捉えやすい、という役割の違いを学びます。",
         "prereq": "かずを整理する",
         "materials": [
-            {"kind": "youtube", "label": "オンライン授業ちゃんねる：ひょうとグラフ", "url": "https://www.youtube.com/watch?v=yhxIhingzZY"},
+            {"kind": "youtube", "label": "サカワチャンネル：小2 ひょうとグラフ", "url": "https://www.youtube.com/watch?v=vX30i4YzaQ4"},
         ],
     },
     {
@@ -536,7 +544,7 @@ def get_client():
     return OpenAI(api_key=key)
 
 
-def ask_openai(text, unit, transcript=None, image_bytes=None, image_mime=None):
+def ask_openai(text, unit, source_context=None, source_label=None, image_bytes=None, image_mime=None):
     client = get_client()
     if client is None:
         raise RuntimeError("OpenAI APIキーが設定されていません。")
@@ -557,9 +565,9 @@ def ask_openai(text, unit, transcript=None, image_bytes=None, image_mime=None):
 - 学年外の高度な公式へ飛ばない。
 """.strip()
 
-    if transcript:
-        base_instructions += "\n- 動画について答えるときは、下の字幕内容を優先し、字幕にない内容を動画内の発言として作らない。"
-        text = f"""動画字幕:\n{transcript[:22000]}\n\n子どもの質問:\n{text}"""
+    if source_context:
+        base_instructions += "\n- 教材について答えるときは、下の取得内容を優先し、教材にない説明を教材内の内容として作らない。"
+        text = f"""参照教材: {source_label or '教材'}\n教材から取得した内容:\n{source_context[:22000]}\n\n子どもの質問:\n{text}"""
 
     if image_bytes is not None:
         encoded = base64.b64encode(image_bytes).decode("utf-8")
@@ -649,16 +657,71 @@ def fetch_youtube_transcript(video_id):
     raise RuntimeError("字幕を取得できませんでした。字幕が無い、取得制限がある、または動画側の設定で取得できない可能性があります。")
 
 
+class _VisibleTextParser(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.parts = []
+        self.skip_depth = 0
+
+    def handle_starttag(self, tag, attrs):
+        if tag in {"script", "style", "noscript"}:
+            self.skip_depth += 1
+
+    def handle_endtag(self, tag):
+        if tag in {"script", "style", "noscript"} and self.skip_depth:
+            self.skip_depth -= 1
+
+    def handle_data(self, data):
+        if self.skip_depth == 0:
+            text = " ".join(data.split())
+            if text:
+                self.parts.append(text)
+
+
+def fetch_web_text(url):
+    req = Request(url, headers={"User-Agent": "Mozilla/5.0 (compatible; SansuNavi/1.0)"})
+    with urlopen(req, timeout=12) as response:
+        raw = response.read(1_500_000)
+        charset = response.headers.get_content_charset() or "utf-8"
+    html = raw.decode(charset, errors="replace")
+    parser = _VisibleTextParser()
+    parser.feed(html)
+    text = "\n".join(parser.parts)
+    if not text.strip():
+        raise RuntimeError("教材ページの本文を取得できませんでした。")
+    return text[:30000]
+
+
+def material_type_label(kind):
+    return {
+        "eboard": "映像授業＋確認問題",
+        "youtube": "解説動画",
+        "web": "Web教材・プリント",
+    }.get(kind, "教材")
+
+
+def material_note(kind):
+    return {
+        "eboard": "この単元の主教材として使用します。短い映像授業と確認問題があります。",
+        "youtube": "別の見せ方で理解を補う補助動画です。",
+        "web": "図・プリント・補助解説として使います。",
+    }.get(kind, "この単元の補助教材です。")
+
+
 def material_buttons(unit):
     for idx, material in enumerate(unit["materials"]):
-        col1, col2 = st.columns([5, 1.4])
-        with col1:
-            icon = "▶" if material["kind"] == "youtube" else "教材"
-            st.markdown(f"**{icon} {material['label']}**")
-        with col2:
-            st.link_button("開く", material["url"], use_container_width=True)
+        st.markdown(f"**{idx + 1}. {material['label']}**")
+        st.caption(f"{material_type_label(material['kind'])}｜{material_note(material['kind'])}")
+        c1, c2 = st.columns([1.3, 4.7])
+        with c1:
+            st.link_button("教材を開く", material["url"], use_container_width=True)
+        with c2:
+            if idx == 0:
+                st.caption("おすすめ順 1位：まずこの教材から始めます。")
         if material["kind"] == "youtube" and idx == 0:
             st.video(material["url"])
+        if idx < len(unit["materials"]) - 1:
+            st.divider()
 
 
 def grade_units(grade):
@@ -677,7 +740,7 @@ def main():
 
     st.markdown('<div class="main-title">算数ナビ AI先生</div>', unsafe_allow_html=True)
     st.markdown(
-        '<div class="subtle">文部科学省の学習指導要領を骨格に、小学1〜3年の算数を単元ごとに学ぶ試作版です。</div>',
+        '<div class="subtle">文部科学省の学習指導要領を骨格に、小学1〜3年の算数を選定済み教材とAI先生で学ぶ試作版です。</div>',
         unsafe_allow_html=True,
     )
 
@@ -743,14 +806,21 @@ def main():
         else:
             st.caption("この学年の登録単元はすべて学習済みです。")
 
-    tab1, tab2, tab3, tab4 = st.tabs(["動画・教材", "AI先生", "YouTubeを読み込む", "答案を添削"])
+    tab1, tab2, tab3, tab4 = st.tabs(["おすすめ教材", "AI先生", "教材とAI先生", "答案を添削"])
 
     with tab1:
-        st.subheader("この単元の教材")
+        st.subheader("こちらで選定済みの教材")
+        st.write("教材を自分で探す必要はありません。上から順に使えば、この単元の学習を始められます。")
         material_buttons(unit)
-        query = quote_plus(f"小学{grade}年 算数 {unit['title']} 解説")
-        st.link_button("YouTubeで別の解説も探す", f"https://www.youtube.com/results?search_query={query}")
-        st.caption("外部教材は公開状況や内容が変わることがあります。保護者が内容を確認して利用してください。")
+        st.divider()
+        st.markdown("**学んだ後の練習**")
+        st.caption("北海道教育委員会が家庭学習向けに公開している学年別・単元別問題です。")
+        st.link_button(
+            f"北海道教育委員会：小学{grade}年 単元別問題",
+            OFFICIAL_PRACTICE[grade],
+            use_container_width=True,
+        )
+        st.caption("外部教材は公開状況が変わる場合があります。リンク切れはアプリ側の教材リスト更新で差し替える前提です。")
 
     with tab2:
         st.subheader("AI先生に聞く")
@@ -780,50 +850,85 @@ def main():
                 st.info("APIキーがなくても、上の『動画・教材』は利用できます。下の設定からAPIキーを入力するとAI機能が使えます。")
 
     with tab3:
-        st.subheader("好きなYouTube動画をAI先生と見る")
-        st.write("YouTube URLを貼ると動画を表示し、字幕を取得できた場合は、その字幕を根拠にAIへ質問できます。")
-        yt_url = st.text_input("YouTube URL", key=f"yt_{unit['id']}", placeholder="https://www.youtube.com/watch?v=...")
-        video_id = extract_youtube_id(yt_url)
-        if yt_url:
-            if video_id:
-                st.video(yt_url)
-            else:
-                st.warning("YouTube動画URLを確認してください。")
+        st.subheader("選定済み教材をAI先生と見る")
+        st.write("この単元に登録済みの教材を選び、AI先生に内容を読み込ませます。URLを自分で探して貼る必要はありません。")
 
-        transcript_key = f"transcript_{unit['id']}"
-        if video_id and st.button("字幕を読み込む", key=f"loadtr_{unit['id']}"):
-            try:
-                with st.spinner("字幕を読み込んでいます"):
-                    transcript = fetch_youtube_transcript(video_id)
-                st.session_state[transcript_key] = transcript
-                st.success(f"字幕を読み込みました（{len(transcript):,}文字）。")
-            except Exception as exc:
-                st.error(str(exc))
-
-        transcript = st.session_state.get(transcript_key, "")
-        with st.expander("字幕を手動で貼る / 読み込んだ字幕を見る"):
-            manual = st.text_area("字幕・文字起こし", value=transcript, height=180, key=f"manualtr_{unit['id']}")
-            if manual != transcript:
-                st.session_state[transcript_key] = manual
-                transcript = manual
-
-        video_question = st.text_area(
-            "動画について質問",
-            placeholder="例：この動画の3つのポイントを教えて。2:30あたりの考え方をやさしく説明して。",
-            key=f"vquestion_{unit['id']}",
+        material_labels = [f"{i + 1}. {m['label']}" for i, m in enumerate(unit["materials"])]
+        selected_material_label = st.selectbox(
+            "AI先生と使う教材",
+            material_labels,
+            key=f"material_select_{unit['id']}",
         )
-        if st.button("動画AI先生に聞く", type="primary", key=f"vsend_{unit['id']}"):
-            if not transcript.strip():
-                st.warning("先に字幕を読み込むか、字幕・文字起こしを貼ってください。")
-            elif not video_question.strip():
-                st.warning("質問を書いてください。")
-            else:
+        material_index = material_labels.index(selected_material_label)
+        selected_material = unit["materials"][material_index]
+
+        st.caption(f"{material_type_label(selected_material['kind'])}｜{material_note(selected_material['kind'])}")
+        if selected_material["kind"] == "youtube":
+            st.video(selected_material["url"])
+        else:
+            st.link_button("教材ページを開く", selected_material["url"], use_container_width=True)
+
+        context_key = f"source_context_{unit['id']}_{material_index}"
+        label_key = f"source_label_{unit['id']}_{material_index}"
+
+        if st.button("この教材をAI先生に読み込む", type="primary", key=f"load_material_{unit['id']}_{material_index}"):
+            try:
+                with st.spinner("教材を読み込んでいます"):
+                    if selected_material["kind"] == "youtube":
+                        video_id = extract_youtube_id(selected_material["url"])
+                        if not video_id:
+                            raise RuntimeError("登録されているYouTube URLを確認できませんでした。")
+                        source_context = fetch_youtube_transcript(video_id)
+                    else:
+                        source_context = fetch_web_text(selected_material["url"])
+                st.session_state[context_key] = source_context
+                st.session_state[label_key] = selected_material["label"]
+                st.success("教材を読み込みました。この下からAI先生に質問できます。")
+            except Exception as exc:
+                st.warning(f"教材本文・字幕の自動取得ができませんでした：{exc}")
+                fallback = f"単元名: {unit['title']}\n学習目標: {unit['goal']}\n学習のポイント: {unit['point']}"
+                st.session_state[context_key] = fallback
+                st.session_state[label_key] = selected_material["label"] + "（単元情報を使用）"
+                st.info("動画・教材自体はそのまま利用できます。AI先生は登録済みの単元情報を基準に解説します。")
+
+        source_context = st.session_state.get(context_key, "")
+        source_label = st.session_state.get(label_key, selected_material["label"])
+
+        if source_context:
+            st.markdown("**AI先生への質問**")
+            q1, q2, q3 = st.columns(3)
+            material_prompt = None
+            with q1:
+                if st.button("大事なところ3つ", use_container_width=True, key=f"mp1_{unit['id']}_{material_index}"):
+                    material_prompt = "この教材で大事なところを、小学生向けに3つだけ説明して。"
+            with q2:
+                if st.button("もっとやさしく", use_container_width=True, key=f"mp2_{unit['id']}_{material_index}"):
+                    material_prompt = "この教材の内容を、具体物や簡単な例を使ってもっとやさしく説明して。"
+            with q3:
+                if st.button("確認問題を3問", use_container_width=True, key=f"mp3_{unit['id']}_{material_index}"):
+                    material_prompt = "この教材の内容から確認問題を3問出して。答えは最初は見せないで。"
+
+            material_question = st.text_area(
+                "教材について聞きたいこと",
+                placeholder="例：この考え方が分からない。もう一度ゆっくり説明して。",
+                key=f"material_q_{unit['id']}_{material_index}",
+            )
+            ask_material = st.button("教材についてAI先生に聞く", key=f"material_send_{unit['id']}_{material_index}")
+            request_text = material_prompt or (material_question.strip() if ask_material else None)
+            if request_text:
                 try:
-                    with st.spinner("動画の内容を確認しています"):
-                        answer = ask_openai(video_question.strip(), unit, transcript=transcript)
+                    with st.spinner("教材の内容に沿って説明しています"):
+                        answer = ask_openai(
+                            request_text,
+                            unit,
+                            source_context=source_context,
+                            source_label=source_label,
+                        )
                     st.markdown(answer)
                 except Exception as exc:
                     st.error(str(exc))
+        else:
+            st.info("まず「この教材をAI先生に読み込む」を押してください。")
 
     with tab4:
         st.subheader("答案写真をAI添削")
@@ -852,7 +957,7 @@ def main():
 
     st.divider()
     with st.expander("AI機能の設定"):
-        st.write("OpenAI APIキーを設定すると、AI先生・動画字幕への質問・答案添削が使えます。キーはこのブラウザの現在のセッション内だけで使用します。Streamlit CloudではSecretsに `OPENAI_API_KEY` を設定する方法も使えます。")
+        st.write("OpenAI APIキーを設定すると、AI先生・選定済み教材への質問・答案添削が使えます。キーはこのブラウザの現在のセッション内だけで使用します。Streamlit CloudではSecretsに `OPENAI_API_KEY` を設定する方法も使えます。")
         st.text_input("OpenAI API Key", type="password", key="openai_api_key")
         st.caption("この試作版はAI処理に gpt-5.6-luna を使用します。")
 
