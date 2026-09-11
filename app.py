@@ -647,11 +647,59 @@ def inject_css():
             transform: scale(.992);
         }
 
-        /* Study actions use the same radius and weight, avoiding oversized heavy controls. */
-        .st-key-complete_action button {
-            min-height: 50px !important;
+        /* Primary study path: the material itself is the tap target. */
+        .unit-card-compact {
+            padding-top: 15px;
+            padding-bottom: 15px;
+            margin-bottom: 10px;
+        }
+        .st-key-study_materials {
+            margin-top: 4px;
+            margin-bottom: 10px;
+        }
+        .st-key-study_materials a {
+            min-height: 66px !important;
+            border-radius: 16px !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: flex-start !important;
+            padding: .9rem 1.05rem !important;
+            text-align: left !important;
+        }
+        .st-key-study_materials a p {
+            font-size: 1.08rem !important;
+            font-weight: 760 !important;
+            line-height: 1.35 !important;
+            white-space: normal !important;
+        }
+        .material-title {
+            font-size: 1.08rem;
+            font-weight: 760;
+            color: var(--kid-ink);
+            margin: .2rem 0 .55rem 0;
+        }
+        .material-gap { height: .5rem; }
+        .st-key-study_practice { margin-top: 10px; margin-bottom: 8px; }
+        .st-key-study_practice a {
+            min-height: 54px !important;
             border-radius: 14px !important;
-            font-weight: 750 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            font-weight: 720 !important;
+        }
+
+        /* Study actions use the same radius and weight, avoiding oversized heavy controls. */
+        .st-key-complete_action {
+            margin-top: 8px;
+        }
+        .st-key-complete_action button {
+            min-height: 44px !important;
+            border-radius: 14px !important;
+            font-weight: 700 !important;
+            background: var(--kid-surface) !important;
+            color: var(--kid-blue-strong) !important;
+            border: 1.5px solid var(--kid-line-strong) !important;
         }
         .st-key-study_home_top button,
         .st-key-study_home_bottom button {
@@ -896,19 +944,25 @@ def material_note(kind):
 
 
 def material_buttons(unit):
-    for idx, material in enumerate(unit["materials"]):
-        st.markdown(f"**{idx + 1}. {material['label']}**")
-        st.caption(f"{material_type_label(material['kind'])}｜{material_note(material['kind'])}")
-        c1, c2 = st.columns([1.3, 4.7])
-        with c1:
-            st.link_button("教材を開く", material["url"], use_container_width=True)
-        with c2:
-            if idx == 0:
-                st.caption("おすすめ順 1位：まずこの教材から始めます。")
-        if material["kind"] == "youtube" and idx == 0:
-            st.video(material["url"])
-        if idx < len(unit["materials"]) - 1:
-            st.divider()
+    """Show the actual learning material as the main tap target, with as little copy as possible."""
+    materials = list(unit.get("materials") or [])
+    with st.container(key="study_materials"):
+        for idx, material in enumerate(materials):
+            label = str(material.get("label") or "教材").strip()
+            kind = str(material.get("kind") or "").strip().lower()
+            url = str(material.get("url") or "").strip()
+            if kind == "youtube":
+                st.markdown(f'<div class="material-title">▶ {label}</div>', unsafe_allow_html=True)
+                st.video(url)
+            else:
+                st.link_button(
+                    f"▶ {label}",
+                    url,
+                    type="primary" if idx == 0 else "secondary",
+                    use_container_width=True,
+                )
+            if idx < len(materials) - 1:
+                st.markdown('<div class="material-gap"></div>', unsafe_allow_html=True)
 
 
 def grade_units(grade):
@@ -1022,41 +1076,40 @@ def main():
 
     st.markdown(
         f"""
-        <div class="unit-card">
+        <div class="unit-card unit-card-compact">
           <div class="unit-title">{unit['order']:02d}. {unit['title']}</div>
           <span class="chip">小学{unit['grade']}年</span><span class="chip">{DOMAIN_SHORT.get(unit['domain'], unit['domain'])}</span>
-          <div class="goal-box"><b>ここまで できたら OK！</b><br>{unit['goal']}</div>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
-    with st.expander("💡 このたんげんのヒント"):
-        st.write(unit["point"])
-        st.caption(f"前にできているとよいこと：{unit['prereq']}")
-
-    with st.container(key="complete_action"):
-        if unit["id"] in completed:
-            if st.button("✓ できた！　もう一度やる", use_container_width=True):
-                completed.discard(unit["id"])
-                st.rerun()
-        else:
-            if st.button("できた！ ✓", type="primary", use_container_width=True):
-                completed.add(unit["id"])
-                st.rerun()
-
-    tab1, tab2, tab3, tab4 = st.tabs(["▶ みる", "💬 AI先生", "📚 教材＋AI", "📷 しゃしん"])
+    tab1, tab2, tab3, tab4 = st.tabs(["▶ まなぶ", "💬 AI先生", "📚 教材＋AI", "📷 しゃしん"])
 
     with tab1:
-        st.subheader("まず これを見よう")
+        # The first useful action is the material itself: no heading and no extra "open" button.
         material_buttons(unit)
-        st.divider()
-        st.markdown("**れんしゅうする**")
-        st.link_button(
-            f"小学{grade}年の問題をひらく",
-            OFFICIAL_PRACTICE[grade],
-            use_container_width=True,
-        )
+        with st.container(key="study_practice"):
+            st.link_button(
+                "✏️ れんしゅう問題",
+                OFFICIAL_PRACTICE[grade],
+                use_container_width=True,
+            )
+
+        with st.expander("💡 ヒント"):
+            st.markdown(f"**できるようになること**  {unit['goal']}")
+            st.write(unit["point"])
+            st.caption(f"前にできているとよいこと：{unit['prereq']}")
+
+        with st.container(key="complete_action"):
+            if unit["id"] in completed:
+                if st.button("✓ できた　取り消す", use_container_width=True):
+                    completed.discard(unit["id"])
+                    st.rerun()
+            else:
+                if st.button("✓ できた", use_container_width=True):
+                    completed.add(unit["id"])
+                    st.rerun()
 
     with tab2:
         st.subheader("AI先生に聞く")
@@ -1082,7 +1135,7 @@ def main():
                 st.markdown(answer)
             except Exception as exc:
                 st.error(str(exc))
-                st.info("APIキーがなくても『▶ みる』の教材は使えます。おうちの方が下の設定からAPIキーを入力するとAI機能が使えます。")
+                st.info("APIキーがなくても『▶ まなぶ』の教材は使えます。おうちの方が下の設定からAPIキーを入力するとAI機能が使えます。")
 
     with tab3:
         st.subheader("教材を見ながらAI先生に聞く")
