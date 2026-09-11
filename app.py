@@ -3,6 +3,7 @@ import os
 import re
 from html.parser import HTMLParser
 from urllib.request import Request, urlopen
+from urllib.parse import urljoin, urlparse
 
 import streamlit as st
 
@@ -943,15 +944,187 @@ def material_note(kind):
     }.get(kind, "この単元の補助教材です。")
 
 
+EBOARD_DIRECT_LESSONS = {
+    # Verified against the current eboard unit page. This also guarantees a useful
+    # first-load path if eboard temporarily blocks server-side index fetching.
+    "https://www.eboard.jp/content/158/": [
+        {
+            "order": 1,
+            "title": "1から5までのかず",
+            "video_url": "https://www.eboard.jp/content/158/v/1/",
+            "question_url": "https://www.eboard.jp/content/158/q/1/1/",
+        },
+        {
+            "order": 2,
+            "title": "6から10までのかず、0（れい）",
+            "video_url": "https://www.eboard.jp/content/158/v/2/",
+            "question_url": "https://www.eboard.jp/content/158/q/2/1/",
+        },
+        {
+            "order": 3,
+            "title": "かずをわける",
+            "video_url": "https://www.eboard.jp/content/158/v/3/",
+            "question_url": "https://www.eboard.jp/content/158/q/3/1/",
+        },
+    ],
+}
+
+
+class _EboardUnitIndexParser(HTMLParser):
+    """Read the lesson rows from an eboard content index without depending on CSS classes."""
+
+    def __init__(self):
+        super().__init__()
+        self._heading_depth = 0
+        self._heading_parts = []
+        self._current_heading = ""
+        self._anchor_href = None
+        self._anchor_parts = []
+        self.links = []
+
+    def handle_starttag(self, tag, attrs):
+        tag = str(tag or "").lower()
+        if tag in {"h2", "h3", "h4"}:
+            self._heading_depth += 1
+            if self._heading_depth == 1:
+                self._heading_parts = []
+        if tag == "a":
+            href = dict(attrs).get("href")
+            self._anchor_href = str(href or "").strip() or None
+            self._anchor_parts = []
+
+    def handle_data(self, data):
+        text = " ".join(str(data or "").split())
+        if not text:
+            return
+        if self._heading_depth:
+            self._heading_parts.append(text)
+        if self._anchor_href is not None:
+            self._anchor_parts.append(text)
+
+    def handle_endtag(self, tag):
+        tag = str(tag or "").lower()
+        if tag in {"h2", "h3", "h4"} and self._heading_depth:
+            self._heading_depth -= 1
+            if self._heading_depth == 0:
+                self._current_heading = " ".join(self._heading_parts).strip()
+        if tag == "a" and self._anchor_href is not None:
+            self.links.append(
+                {
+                    "href": self._anchor_href,
+                    "text": " ".join(self._anchor_parts).strip(),
+                    "heading": self._current_heading,
+                }
+            )
+            self._anchor_href = None
+            self._anchor_parts = []
+
+
+def _normalize_eboard_unit_url(url):
+    value = str(url or "").strip()
+    if not value:
+        return ""
+    parsed = urlparse(value)
+    path = parsed.path or "/"
+    if not path.endswith("/"):
+        path += "/"
+    return f"{parsed.scheme or 'https'}://{parsed.netloc}{path}"
+
+
+@st.cache_data(ttl=3600, show_spinner=False)
+def fetch_eboard_direct_lessons(url):
+    """Return eboard's individual video + matching confirmation-problem links."""
+    unit_url = _normalize_eboard_unit_url(url)
+    fallback = [dict(item) for item in EBOARD_DIRECT_LESSONS.get(unit_url, [])]
+
+    try:
+        req = Request(unit_url, headers={"User-Agent": "Mozilla/5.0 (compatible; SansuNavi/1.0)"})
+        with urlopen(req, timeout=10) as response:
+            raw = response.read(1_500_000)
+            charset = response.headers.get_content_charset() or "utf-8"
+        html_text = raw.decode(charset, errors="replace")
+        parser = _EboardUnitIndexParser()
+        parser.feed(html_text)
+
+        base_match = re.search(r"/content/(\d+)/", urlparse(unit_url).path or "")
+        content_id = base_match.group(1) if base_match else ""
+        lessons = {}
+        questions = {}
+        for link in parser.links:
+            absolute = urljoin(unit_url, link.get("href") or "")
+            path = urlparse(absolute).path or ""
+            video_match = re.fullmatch(r"/content/(\d+)/v/(\d+)/?", path)
+            question_match = re.fullmatch(r"/content/(\d+)/q/(\d+)/1/?", path)
+            if video_match and (not content_id or video_match.group(1) == content_id):
+                number = int(video_match.group(2))
+                heading = str(link.get("heading") or "").strip()
+                title = re.sub(r"^\s*\d+[.．、)]?\s*", "", heading).strip()
+                if not title or title in {"動画一覧", "もくじ"}:
+                    title = str(link.get("text") or "").strip()
+                lessons[number] = {
+                    "order": number,
+                    "title": title or f"教材 {number}",
+                    "video_url": absolute,
+                    "question_url": "",
+                }
+            elif question_match and (not content_id or question_match.group(1) == content_id):
+                questions[int(question_match.group(2))] = absolute
+
+        result = []
+        for number in sorted(lessons):
+            item = dict(lessons[number])
+            item["question_url"] = questions.get(number, "")
+            result.append(item)
+        if result:
+            return result
+    except Exception:
+        pass
+
+    return fallback
+
+
+def _render_eboard_material(material, key_prefix):
+    url = str(material.get("url") or "").strip()
+    lessons = fetch_eboard_direct_lessons(url)
+    if not lessons:
+        st.link_button("▶ この教材をひらく", url, type="primary", use_container_width=True)
+        return
+
+    for lesson in lessons:
+        number = int(lesson.get("order") or 0)
+        title = str(lesson.get("title") or f"教材 {number}").strip()
+        video_url = str(lesson.get("video_url") or "").strip()
+        question_url = str(lesson.get("question_url") or "").strip()
+        left, right = st.columns([4.7, 1.55], gap="small")
+        with left:
+            st.link_button(
+                f"▶ {number:02d}　{title}",
+                video_url,
+                type="primary" if number == 1 else "secondary",
+                use_container_width=True,
+            )
+        with right:
+            if question_url:
+                st.link_button(
+                    "✏️ もんだい",
+                    question_url,
+                    use_container_width=True,
+                )
+        if number < len(lessons):
+            st.markdown('<div class="material-gap compact"></div>', unsafe_allow_html=True)
+
+
 def material_buttons(unit):
-    """Show the actual learning material as the main tap target, with as little copy as possible."""
+    """Make the lesson itself the first tap target; avoid intermediate index pages."""
     materials = list(unit.get("materials") or [])
     with st.container(key="study_materials"):
         for idx, material in enumerate(materials):
             label = str(material.get("label") or "教材").strip()
             kind = str(material.get("kind") or "").strip().lower()
             url = str(material.get("url") or "").strip()
-            if kind == "youtube":
+            if kind == "eboard":
+                _render_eboard_material(material, f"{unit.get('id')}_{idx}")
+            elif kind == "youtube":
                 st.markdown(f'<div class="material-title">▶ {label}</div>', unsafe_allow_html=True)
                 st.video(url)
             else:
@@ -1089,13 +1262,8 @@ def main():
     with tab1:
         # The first useful action is the material itself: no heading and no extra "open" button.
         material_buttons(unit)
-        with st.container(key="study_practice"):
-            st.link_button(
-                "✏️ れんしゅう問題",
-                OFFICIAL_PRACTICE[grade],
-                use_container_width=True,
-            )
-
+        # Practice is paired with each eboard lesson above. Do not send children to
+        # a broad grade-level exercise index that may not match what they just studied.
         with st.expander("💡 ヒント"):
             st.markdown(f"**できるようになること**  {unit['goal']}")
             st.write(unit["point"])
