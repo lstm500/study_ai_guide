@@ -38,6 +38,58 @@ OFFICIAL_PRACTICE = {
     6: "https://www.dokyoi.pref.hokkaido.lg.jp/hk/gks/ct/tangen6.html",
 }
 
+# Each expanded unit points to the matching eboard content page.  Some app
+# units combine topics that eboard separates, or use only part of a page; in
+# those cases the material entries below keep the child's route precise.
+EBOARD_UNIT_MATERIALS = {
+    "g4-01": [{"label": "大きな数", "url": "https://www.eboard.jp/content/222/"}],
+    "g4-02": [{"label": "わり算の筆算", "url": "https://www.eboard.jp/content/221/"}],
+    "g4-03": [{"label": "2けたでわる筆算", "url": "https://www.eboard.jp/content/257/"}],
+    "g4-04": [{"label": "計算のきまり", "url": "https://www.eboard.jp/content/223/"}],
+    "g4-05": [{"label": "がい数と見積もり", "url": "https://www.eboard.jp/content/258/"}],
+    "g4-06": [{"label": "小数（4年生）", "url": "https://www.eboard.jp/content/225/"}],
+    "g4-07": [{"label": "仮分数と帯分数", "url": "https://www.eboard.jp/content/261/"}],
+    "g4-08": [{"label": "角の大きさ", "url": "https://www.eboard.jp/content/220/"}],
+    "g4-09": [{"label": "垂直・平行と四角形", "url": "https://www.eboard.jp/content/259/"}],
+    "g4-10": [{"label": "直方体と立方体", "url": "https://www.eboard.jp/content/262/"}],
+    "g4-11": [{"label": "面積", "url": "https://www.eboard.jp/content/226/"}],
+    "g4-12": [{"label": "折れ線グラフと表", "url": "https://www.eboard.jp/content/224/"}],
+    "g4-13": [{"label": "変わり方調べ", "url": "https://www.eboard.jp/content/542/"}],
+    "g5-01": [{"label": "整数と小数", "url": "https://www.eboard.jp/content/554/"}],
+    "g5-02": [{"label": "小数のかけ算", "url": "https://www.eboard.jp/content/265/"}],
+    "g5-03": [{"label": "小数のわり算", "url": "https://www.eboard.jp/content/266/"}],
+    "g5-04": [{"label": "倍数と約数", "url": "https://www.eboard.jp/content/268/"}],
+    "g5-05": [{"label": "約分と通分・分数の計算", "url": "https://www.eboard.jp/content/269/"}],
+    "g5-06": [{"label": "分数と小数", "url": "https://www.eboard.jp/content/271/"}],
+    "g5-07": [{"label": "体積", "url": "https://www.eboard.jp/content/264/"}],
+    "g5-08": [{"label": "平均", "url": "https://www.eboard.jp/content/272/", "lesson_numbers": [1, 2, 3]}],
+    "g5-09": [{"label": "単位量あたりの大きさ", "url": "https://www.eboard.jp/content/272/", "lesson_numbers": [4, 5, 6, 7]}],
+    "g5-10": [{"label": "合同な図形", "url": "https://www.eboard.jp/content/267/", "lesson_numbers": [1, 2, 3]}],
+    "g5-11": [{"label": "図形の角", "url": "https://www.eboard.jp/content/267/", "lesson_numbers": [4, 5, 6, 7, 8]}],
+    "g5-12": [{"label": "いろいろな図形の面積", "url": "https://www.eboard.jp/content/270/"}],
+    "g5-13": [{"label": "正多角形と円", "url": "https://www.eboard.jp/content/276/"}],
+    "g5-14": [{"label": "角柱と円柱", "url": "https://www.eboard.jp/content/555/"}],
+    "g5-15": [
+        {"label": "割合", "url": "https://www.eboard.jp/content/273/"},
+        {"label": "百分率と歩合", "url": "https://www.eboard.jp/content/274/"},
+        {"label": "帯グラフと円グラフ", "url": "https://www.eboard.jp/content/275/"},
+    ],
+    "g5-16": [{"label": "比例", "url": "https://www.eboard.jp/content/553/"}],
+    "g6-01": [{"label": "文字と式", "url": "https://www.eboard.jp/content/283/"}],
+    "g6-02": [{"label": "分数のかけ算", "url": "https://www.eboard.jp/content/282/"}],
+    "g6-03": [{"label": "分数のわり算", "url": "https://www.eboard.jp/content/556/"}],
+    "g6-04": [{"label": "比", "url": "https://www.eboard.jp/content/284/"}],
+    "g6-05": [{"label": "比例と反比例", "url": "https://www.eboard.jp/content/287/"}],
+    "g6-06": [{"label": "速さ", "url": "https://www.eboard.jp/content/286/"}],
+    "g6-07": [{"label": "対称な図形", "url": "https://www.eboard.jp/content/281/"}],
+    "g6-08": [{"label": "円の面積", "url": "https://www.eboard.jp/content/288/", "lesson_numbers": [1, 2, 3]}],
+    "g6-09": [{"label": "角柱・円柱の体積", "url": "https://www.eboard.jp/content/288/", "lesson_numbers": [4, 5, 6]}],
+    "g6-10": [{"label": "拡大と縮小", "url": "https://www.eboard.jp/content/285/"}],
+    "g6-11": [{"label": "場合の数", "url": "https://www.eboard.jp/content/289/"}],
+    "g6-12": [{"label": "データの調べ方", "url": "https://www.eboard.jp/content/290/"}],
+    "g6-13": [{"label": "およその面積・体積", "url": "https://www.eboard.jp/content/288/", "lesson_numbers": [7]}],
+}
+
 UNITS = [
     # ------------------------- 小学1年 -------------------------
     {
@@ -149,6 +201,7 @@ UNITS = [
         "point": "短い針と長い針の役割を分け、まず『○時』『○時半』から安定させます。",
         "prereq": "60までの数を読む経験",
         "materials": [
+            {"kind": "eboard", "label": "eboard：とけいをよむ", "url": "https://www.eboard.jp/content/534/"},
             {"kind": "youtube", "label": "ごにチューブ：とけいのよみかた", "url": "https://www.youtube.com/watch?v=gdSYrlZof9c"},
         ],
     },
@@ -308,6 +361,7 @@ UNITS = [
         "point": "表は数を正確に比べやすく、グラフは大小を見た目で捉えやすい、という役割の違いを学びます。",
         "prereq": "かずを整理する",
         "materials": [
+            {"kind": "eboard", "label": "eboard：グラフとひょう", "url": "https://www.eboard.jp/content/535/"},
             {"kind": "youtube", "label": "サカワチャンネル：小2 ひょうとグラフ", "url": "https://www.youtube.com/watch?v=vX30i4YzaQ4"},
         ],
     },
@@ -471,6 +525,7 @@ UNITS = [
         "point": "棒の高さだけでなく、目盛りがいくつずつ増えるかを確認して読み取ります。",
         "prereq": "2年生の表とグラフ",
         "materials": [
+            {"kind": "eboard", "label": "eboard：表とぼうグラフ", "url": "https://www.eboard.jp/content/215/"},
             {"kind": "youtube", "label": "よしみん先生：棒グラフの書き方", "url": "https://www.youtube.com/watch?v=xTNc82HRgJU"},
             {"kind": "youtube", "label": "よしみん先生：棒グラフを読み取ろう", "url": "https://www.youtube.com/watch?v=3YtxQkLOyXg"},
         ],
@@ -507,21 +562,8 @@ def _learning_unit(unit_id, grade, order, domain, title, goal, prereq, starter):
             "instruction": starter,
         }
     ]
-    if grade >= 1:
-        materials.extend(
-            [
-                {
-                    "kind": "web",
-                    "label": "eboard：算数の映像授業",
-                    "url": EBOARD_URL,
-                },
-                {
-                    "kind": "web",
-                    "label": f"北海道教育委員会：小学{grade}年 単元別問題",
-                    "url": OFFICIAL_PRACTICE[grade],
-                },
-            ]
-        )
+    for eboard_material in EBOARD_UNIT_MATERIALS.get(unit_id, []):
+        materials.append({"kind": "eboard", **eboard_material})
     return {
         "id": unit_id,
         "grade": grade,
@@ -790,6 +832,24 @@ def inject_css():
         .st-key-study_materials {
             margin-top: 4px;
             margin-bottom: 10px;
+        }
+        .route-guide {
+            border-left: 5px solid var(--kid-blue);
+            border-radius: 12px;
+            padding: 10px 13px;
+            margin: 8px 0 12px 0;
+            background: var(--kid-blue-soft);
+            color: var(--kid-ink);
+            font-size: .98rem;
+            font-weight: 760;
+            line-height: 1.55;
+        }
+        .route-guide-next { margin-top: 18px; }
+        .eboard-heading {
+            margin: 18px 2px 6px 2px;
+            color: var(--kid-ink);
+            font-size: 1.02rem;
+            font-weight: 800;
         }
         .st-key-study_materials a {
             min-height: 66px !important;
@@ -1354,6 +1414,13 @@ def unit_material_completion_keys(unit):
         kind = str(material.get("kind") or "").strip().lower()
         if kind == "eboard":
             lessons = fetch_eboard_direct_lessons(material.get("url"))
+            lesson_numbers = {int(number) for number in material.get("lesson_numbers", [])}
+            if lesson_numbers:
+                lessons = [
+                    lesson
+                    for lesson in lessons
+                    if int(lesson.get("order") or 0) in lesson_numbers
+                ]
             if lessons:
                 keys.extend(
                     _lesson_completion_key(unit.get("id"), material_index, int(lesson.get("order") or index + 1))
@@ -1398,7 +1465,7 @@ def _render_done_action(completion_key, unit, completed_units, completed_materia
     state = "done" if done else "open"
     with st.container(key=f"done_action_{state}_{token}"):
         if st.button(
-            "✓ できた" if done else "○ できた",
+            "✓ できた" if done else "③ できた",
             use_container_width=True,
             key=f"done_material_{token}",
         ):
@@ -1409,6 +1476,15 @@ def _render_done_action(completion_key, unit, completed_units, completed_materia
 def _render_eboard_material(unit, material, material_index, completed_units, completed_materials):
     url = str(material.get("url") or "").strip()
     lessons = fetch_eboard_direct_lessons(url)
+    lesson_numbers = {int(number) for number in material.get("lesson_numbers", [])}
+    if lesson_numbers:
+        lessons = [lesson for lesson in lessons if int(lesson.get("order") or 0) in lesson_numbers]
+
+    label = str(material.get("label") or unit.get("title") or "この単元").strip()
+    st.markdown(
+        f'<div class="eboard-heading">🎬 eboard｜{html.escape(label)}</div>',
+        unsafe_allow_html=True,
+    )
     if not lessons:
         completion_key = _material_completion_key(unit.get("id"), material_index, "eboard")
         done = completion_key in completed_materials
@@ -1416,7 +1492,7 @@ def _render_eboard_material(unit, material, material_index, completed_units, com
         token = _safe_widget_token(completion_key)
         with st.container(key=f"material_row_{state}_{token}"):
             with st.container(key=f"lesson_action_{state}_{token}"):
-                st.link_button("▶ この教材をひらく", url, use_container_width=True)
+                st.link_button(f"① 動画と問題をひらく｜{label}", url, use_container_width=True)
             _render_done_action(completion_key, unit, completed_units, completed_materials, token)
         return
 
@@ -1433,7 +1509,7 @@ def _render_eboard_material(unit, material, material_index, completed_units, com
         with st.container(key=f"material_row_{state}_{token}"):
             with st.container(key=f"lesson_action_{state}_{token}"):
                 st.link_button(
-                    f"▶ {number:02d}　{title}",
+                    f"① 動画　{number:02d}｜{title}",
                     video_url,
                     use_container_width=True,
                 )
@@ -1441,7 +1517,7 @@ def _render_eboard_material(unit, material, material_index, completed_units, com
                 problem_col, done_col = st.columns(2, gap="small")
                 with problem_col:
                     with st.container(key=f"problem_action_{state}_{token}"):
-                        st.link_button("✏️ もんだい", question_url, use_container_width=True)
+                        st.link_button("② もんだい", question_url, use_container_width=True)
                 with done_col:
                     _render_done_action(completion_key, unit, completed_units, completed_materials, token)
             else:
@@ -1478,6 +1554,10 @@ def material_buttons(unit, completed_units, completed_materials):
     """Show only the shortest study path. Every material has its own completion button."""
     materials = list((unit or {}).get("materials") or [])
     with st.container(key="study_materials"):
+        st.markdown(
+            '<div class="route-guide">この順番で進もう　👐 ためす → ① 動画 → ② もんだい → ③ できた</div>',
+            unsafe_allow_html=True,
+        )
         for material_index, material in enumerate(materials):
             kind = str(material.get("kind") or "").strip().lower()
             if kind == "eboard":
@@ -1547,6 +1627,36 @@ def render_ai_support(unit):
 
 def grade_units(grade):
     return sorted([u for u in UNITS if u["grade"] == grade], key=lambda x: x["order"])
+
+
+def render_unit_navigation(unit, units):
+    """Keep movement between lessons inside the app and always show a way home."""
+    current_index = next((index for index, item in enumerate(units) if item["id"] == unit["id"]), 0)
+    previous_unit = units[current_index - 1] if current_index > 0 else None
+    next_unit = units[current_index + 1] if current_index + 1 < len(units) else None
+
+    st.markdown('<div class="route-guide route-guide-next">つぎに行く場所をえらぼう</div>', unsafe_allow_html=True)
+    previous_col, home_col, next_col = st.columns([1, 1, 1])
+    with previous_col:
+        if previous_unit and st.button(
+            f"← {previous_unit['order']:02d} {previous_unit['title']}",
+            use_container_width=True,
+            key=f"previous_unit_{unit['id']}",
+        ):
+            st.session_state["selected_unit_id"] = previous_unit["id"]
+            st.rerun()
+    with home_col:
+        if st.button("🏠 単元をえらぶ", use_container_width=True, key=f"unit_home_{unit['id']}"):
+            st.session_state["_reset_to_home_requested"] = True
+            st.rerun()
+    with next_col:
+        if next_unit and st.button(
+            f"{next_unit['order']:02d} {next_unit['title']} →",
+            use_container_width=True,
+            key=f"next_unit_{unit['id']}",
+        ):
+            st.session_state["selected_unit_id"] = next_unit["id"]
+            st.rerun()
 
 
 def completion_state():
@@ -1703,12 +1813,20 @@ def main():
     sync_unit_completion(unit, completed, completed_materials)
     material_buttons(unit, completed, completed_materials)
 
+    render_unit_navigation(unit, units)
+
     render_ai_support(unit)
 
     with st.expander("おうちの方へ：ねらいと見守り方"):
         st.markdown(f"**ねらい**　{unit['goal']}")
         st.markdown(f"**先にできるとよいこと**　{unit['prereq']}")
         st.markdown(f"**見守り方**　{unit['point']}")
+        if grade in OFFICIAL_PRACTICE:
+            st.link_button(
+                f"保護者向け：小学{grade}年の単元別問題",
+                OFFICIAL_PRACTICE[grade],
+                use_container_width=True,
+            )
 
     render_home_reset_button("bottom")
 
