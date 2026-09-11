@@ -505,109 +505,204 @@ def inject_css():
         """
         <style>
         :root {
-            --kid-blue: #4f7cff;
-            --kid-blue-soft: #eef4ff;
-            --kid-yellow: #fff5c7;
-            --kid-green: #e9f8ee;
-            --kid-ink: #25324a;
-            --kid-muted: #68738a;
+            --kid-blue: #5b78d6;
+            --kid-blue-strong: #465fb5;
+            --kid-blue-soft: #f3f6ff;
+            --kid-line: #d9e1f5;
+            --kid-line-strong: #c7d3f0;
+            --kid-yellow: #fff8dc;
+            --kid-ink: #27364f;
+            --kid-muted: #6f7d96;
+            --kid-surface: #ffffff;
+            --kid-surface-soft: #fbfcff;
         }
-        .block-container {padding-top: 3.6rem !important; padding-bottom: 3rem; max-width: 980px;}
+
+        /* Give the app enough breathing room without leaving a large empty cap. */
+        .block-container {
+            padding-top: 3.35rem !important;
+            padding-bottom: 3rem !important;
+            max-width: 980px;
+        }
+
+        /* Typography hierarchy: strong enough for children, but not heavy everywhere. */
         .main-title {
-            font-size: 2.55rem; font-weight: 900; line-height: 1.15; margin-bottom: .15rem;
-            letter-spacing: .01em; color: var(--kid-ink);
+            font-size: 2.15rem;
+            font-weight: 800;
+            line-height: 1.18;
+            letter-spacing: .005em;
+            color: var(--kid-ink);
+            margin-bottom: .25rem;
         }
         .home-question {
-            font-size: 1.85rem; font-weight: 900; margin: .8rem 0 .35rem 0; color: var(--kid-ink);
+            font-size: 1.65rem;
+            font-weight: 800;
+            line-height: 1.3;
+            color: var(--kid-ink);
+            margin: .85rem 0 .4rem 0;
         }
-        .subtle {color: var(--kid-muted); font-size: .92rem;}
-        .progress-line {font-size: 1.18rem; font-weight: 800; color: var(--kid-muted); margin: .15rem 0 .35rem 0;}
+        .subtle {color: var(--kid-muted); font-size: .94rem;}
+        .progress-line {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--kid-muted);
+            margin: .45rem 0 .3rem 0;
+        }
+
+        /* Study-page information cards use the same visual weight as the home cards. */
         .unit-card {
-            border: 1px solid rgba(79,124,255,.18); border-radius: 20px; padding: 18px 20px;
-            margin: 8px 0 14px 0; background: rgba(248,250,255,.8);
+            border: 1.5px solid var(--kid-line);
+            border-radius: 18px;
+            padding: 18px 20px;
+            margin: 10px 0 14px 0;
+            background: var(--kid-surface-soft);
+            box-shadow: 0 2px 8px rgba(39,54,79,.035);
         }
-        .unit-title {font-size: 1.55rem; font-weight: 900; margin-bottom: .25rem; color: var(--kid-ink);}
+        .unit-title {
+            font-size: 1.45rem;
+            font-weight: 800;
+            line-height: 1.35;
+            margin-bottom: .45rem;
+            color: var(--kid-ink);
+        }
         .chip {
-            display:inline-block; border:1px solid rgba(79,124,255,.25); border-radius:999px;
-            padding:4px 10px; font-size:.82rem; margin-right:6px; background: var(--kid-blue-soft);
+            display: inline-block;
+            border: 1px solid var(--kid-line-strong);
+            border-radius: 999px;
+            padding: 4px 10px;
+            font-size: .8rem;
+            font-weight: 650;
+            margin-right: 6px;
+            background: var(--kid-blue-soft);
+            color: var(--kid-blue-strong);
         }
         .goal-box {
-            border-radius:16px; padding:14px 16px; background: var(--kid-yellow); margin-top:12px;
-            font-size: 1rem; line-height: 1.65;
+            border-radius: 14px;
+            padding: 13px 15px;
+            background: var(--kid-yellow);
+            margin-top: 12px;
+            font-size: 1rem;
+            line-height: 1.65;
+            color: var(--kid-ink);
         }
         .tiny {font-size:.82rem; color:var(--kid-muted);}
         div[data-testid="stMetricValue"] {font-size:1.2rem;}
 
-        /* Home: make grade choice and units large enough for children to tap directly. */
-        .st-key-home_grade [role="radiogroup"] {gap: .55rem;}
+        /* Grade choice: medium weight, same border language as unit cards. */
+        .st-key-home_grade [role="radiogroup"] {
+            gap: .5rem;
+            flex-wrap: wrap;
+        }
         .st-key-home_grade [role="radiogroup"] label {
-            border: 2px solid rgba(79,124,255,.22); border-radius: 16px; padding: .45rem .9rem;
-            min-width: 96px; min-height: 58px; justify-content: center; background: #fff;
-            font-weight: 900; font-size: 1.2rem;
+            border: 1.5px solid var(--kid-line);
+            border-radius: 14px;
+            padding: .45rem .85rem;
+            min-width: 92px;
+            min-height: 52px;
+            justify-content: center;
+            background: var(--kid-surface);
+            color: var(--kid-ink);
+            font-size: 1.05rem;
+            font-weight: 700;
+            box-shadow: 0 1px 4px rgba(39,54,79,.025);
         }
+        .st-key-home_grade [role="radiogroup"] label p {
+            font-size: 1.05rem !important;
+            font-weight: 700 !important;
+        }
+
+        /* Home unit buttons: one calm card system, equal height and balanced type/border weight. */
         .st-key-unit_picker_grid button {
-            height: 132px !important; min-height: 132px !important; max-height: 132px !important;
-            border-radius: 22px !important;
-            border: 2px solid rgba(79,124,255,.18) !important;
-            background: #fff !important; color: var(--kid-ink) !important;
-            font-size: 1.85rem !important; font-weight: 900 !important; line-height: 1.22 !important;
-            text-align: left !important; justify-content: flex-start !important; align-items: center !important;
-            padding: 1rem 1.2rem !important;
-            box-shadow: 0 3px 10px rgba(36,50,74,.05);
+            height: 108px !important;
+            min-height: 108px !important;
+            max-height: 108px !important;
+            border-radius: 18px !important;
+            border: 1.5px solid var(--kid-line) !important;
+            background: var(--kid-surface) !important;
+            color: var(--kid-ink) !important;
+            text-align: left !important;
+            justify-content: flex-start !important;
+            align-items: center !important;
+            padding: 1rem 1.15rem !important;
+            box-shadow: 0 2px 7px rgba(39,54,79,.04) !important;
             overflow: hidden !important;
+            transition: border-color .14s ease, background .14s ease, transform .08s ease, box-shadow .14s ease;
         }
-        /* Streamlit gives the text inside a button its own <p> font size. Target it
-           explicitly so the child-facing unit names really render large. */
         .st-key-unit_picker_grid button p,
         .st-key-unit_picker_grid div[data-testid="stButton"] button p {
-            font-size: 1.85rem !important;
-            font-weight: 900 !important;
-            line-height: 1.22 !important;
-            letter-spacing: .01em !important;
+            width: 100% !important;
+            margin: 0 !important;
             white-space: normal !important;
             overflow-wrap: anywhere !important;
-            margin: 0 !important;
-            width: 100% !important;
+            font-size: 1.34rem !important;
+            font-weight: 720 !important;
+            line-height: 1.35 !important;
+            letter-spacing: 0 !important;
         }
         .st-key-unit_picker_grid button:hover {
-            border-color: rgba(79,124,255,.55) !important; background: var(--kid-blue-soft) !important;
+            border-color: var(--kid-line-strong) !important;
+            background: var(--kid-blue-soft) !important;
+            box-shadow: 0 4px 12px rgba(39,54,79,.06) !important;
         }
-        .st-key-study_back button {border-radius: 999px !important; font-weight: 800 !important;}
-        .st-key-complete_action button {min-height: 50px !important; border-radius: 15px !important; font-weight: 850 !important;}
+        .st-key-unit_picker_grid button:active {
+            transform: scale(.992);
+        }
+
+        /* Study actions use the same radius and weight, avoiding oversized heavy controls. */
+        .st-key-complete_action button {
+            min-height: 50px !important;
+            border-radius: 14px !important;
+            font-weight: 750 !important;
+        }
         .st-key-study_home_top button,
         .st-key-study_home_bottom button {
-            min-height: 64px !important;
-            border-radius: 18px !important;
-            font-size: 1.25rem !important;
-            font-weight: 900 !important;
-            padding: 12px 20px !important;
+            min-height: 56px !important;
+            border-radius: 16px !important;
+            border-width: 1.5px !important;
+            font-size: 1.05rem !important;
+            font-weight: 750 !important;
+            padding: 10px 18px !important;
         }
         .st-key-study_home_top {margin-bottom: 10px;}
         .st-key-study_home_bottom {margin-top: 16px;}
 
         @media (max-width: 700px) {
-            .block-container {padding-top: 3.9rem !important; padding-left: .75rem; padding-right: .75rem;}
-            .main-title {font-size: 2.55rem; line-height: 1.14;}
-            .home-question {font-size: 2.15rem; line-height: 1.2; margin-top: .85rem;}
-            .unit-card {padding: 14px 14px; border-radius: 17px;}
-            .unit-title {font-size: 1.35rem;}
+            .block-container {
+                padding-top: 3.55rem !important;
+                padding-left: .8rem !important;
+                padding-right: .8rem !important;
+            }
+            .main-title {font-size: 2rem;}
+            .home-question {font-size: 1.55rem; margin-top: .75rem;}
+            .unit-card {padding: 15px 15px; border-radius: 16px;}
+            .unit-title {font-size: 1.3rem;}
             .st-key-home_grade [role="radiogroup"] {gap: .35rem;}
-            .st-key-home_grade [role="radiogroup"] label {min-width: 88px; min-height: 60px; padding: .5rem .7rem; font-size: 1.28rem;}
-            .st-key-home_grade [role="radiogroup"] label p {font-size: 1.28rem !important; font-weight: 900 !important;}
+            .st-key-home_grade [role="radiogroup"] label {
+                min-width: 84px;
+                min-height: 50px;
+                padding: .4rem .65rem;
+                font-size: 1rem;
+            }
+            .st-key-home_grade [role="radiogroup"] label p {
+                font-size: 1rem !important;
+                font-weight: 700 !important;
+            }
             .st-key-unit_picker_grid button {
-                height: 126px !important; min-height: 126px !important; max-height: 126px !important;
-                font-size: 1.65rem !important; line-height: 1.2 !important;
-                padding: .9rem 1rem !important;
+                height: 102px !important;
+                min-height: 102px !important;
+                max-height: 102px !important;
+                border-radius: 16px !important;
+                padding: .85rem .9rem !important;
             }
             .st-key-unit_picker_grid button p,
             .st-key-unit_picker_grid div[data-testid="stButton"] button p {
-                font-size: 1.65rem !important;
-                line-height: 1.2 !important;
+                font-size: 1.2rem !important;
+                font-weight: 720 !important;
+                line-height: 1.34 !important;
             }
             .st-key-study_home_top button,
             .st-key-study_home_bottom button {
-                min-height: 68px !important;
-                font-size: 1.32rem !important;
+                min-height: 58px !important;
+                font-size: 1.08rem !important;
             }
         }
         </style>
@@ -886,19 +981,11 @@ def main():
         )
         st.progress(done_count / max(1, len(units)))
 
-        domain_icon = {
-            "A 数と計算": "🧮",
-            "B 図形": "🔷",
-            "C 測定": "📏",
-            "D データの活用": "📊",
-        }
-
         with st.container(key="unit_picker_grid"):
             cols = st.columns(2)
             for index, unit in enumerate(units):
-                status = "✓ " if unit["id"] in completed else ""
-                icon = domain_icon.get(unit.get("domain"), "✏️")
-                label = f"{status}{unit['order']:02d}　{unit['title']}   {icon}"
+                status = "✓　" if unit["id"] in completed else ""
+                label = f"{status}{unit['order']:02d}　{unit['title']}"
                 with cols[index % 2]:
                     if st.button(
                         label,
