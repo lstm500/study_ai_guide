@@ -559,6 +559,16 @@ def inject_css():
         }
         .st-key-study_back button {border-radius: 999px !important; font-weight: 800 !important;}
         .st-key-complete_action button {min-height: 50px !important; border-radius: 15px !important; font-weight: 850 !important;}
+        .st-key-study_home_top button,
+        .st-key-study_home_bottom button {
+            min-height: 64px !important;
+            border-radius: 18px !important;
+            font-size: 1.25rem !important;
+            font-weight: 900 !important;
+            padding: 12px 20px !important;
+        }
+        .st-key-study_home_top {margin-bottom: 10px;}
+        .st-key-study_home_bottom {margin-top: 16px;}
 
         @media (max-width: 700px) {
             .block-container {padding-top: .65rem; padding-left: .75rem; padding-right: .75rem;}
@@ -571,6 +581,11 @@ def inject_css():
             .st-key-unit_picker_grid button {
                 min-height: 104px !important; font-size: 1.58rem !important; line-height: 1.35 !important;
                 padding: 1rem 1rem !important;
+            }
+            .st-key-study_home_top button,
+            .st-key-study_home_bottom button {
+                min-height: 68px !important;
+                font-size: 1.32rem !important;
             }
         }
         </style>
@@ -789,7 +804,30 @@ def completion_state():
     return st.session_state.completed_units
 
 
+def apply_requested_home_reset():
+    """Clear transient study UI before any page widgets are rebuilt."""
+    if not bool(st.session_state.get("_reset_to_home_requested")):
+        return
+    # Keep only learning progress and the parent-entered API key. Everything else is UI state.
+    keep_keys = {"completed_units", "openai_api_key"}
+    for key in list(st.session_state.keys()):
+        if key not in keep_keys:
+            st.session_state.pop(key, None)
+
+
+def render_home_reset_button(position):
+    container_key = f"study_home_{position}"
+    button_key = f"study_home_{position}_button"
+    with st.container(key=container_key):
+        if st.button("🏠 トップページに戻る", use_container_width=True, key=button_key):
+            # Do the actual clearing at the start of the next run so widget-backed keys
+            # are never mutated after their widgets were already instantiated.
+            st.session_state["_reset_to_home_requested"] = True
+            st.rerun()
+
+
 def main():
+    apply_requested_home_reset()
     inject_css()
     completed = completion_state()
 
@@ -871,10 +909,7 @@ def main():
     grade = int(unit["grade"])
     units = grade_units(grade)
 
-    with st.container(key="study_back"):
-        if st.button("← たんげんを えらぶ", use_container_width=False):
-            st.session_state.pop("selected_unit_id", None)
-            st.rerun()
+    render_home_reset_button("top")
 
     st.markdown(
         f"""
@@ -1047,6 +1082,8 @@ def main():
         st.write("OpenAI APIキーを設定すると、AI先生・教材への質問・答案添削が使えます。")
         st.text_input("OpenAI API Key", type="password", key="openai_api_key")
         st.caption("この試作版はAI処理に gpt-5.6-luna を使用します。")
+
+    render_home_reset_button("bottom")
 
 
 if __name__ == "__main__":
