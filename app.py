@@ -19,7 +19,7 @@ except Exception:
 
 
 st.set_page_config(
-    page_title="算数ナビ AI先生",
+    page_title="さんすうナビ",
     page_icon="🧮",
     layout="wide",
     initial_sidebar_state="collapsed",
@@ -690,6 +690,72 @@ def inject_css():
             font-weight: 720 !important;
         }
 
+        /* Each lesson is one compact learning card: lesson -> problem -> done. */
+        [class*="st-key-material_row_"] {
+            border: 1.5px solid var(--kid-line);
+            border-radius: 18px;
+            padding: 12px 12px 10px 12px;
+            margin: 8px 0 12px 0;
+            background: var(--kid-surface-soft);
+            box-shadow: 0 2px 8px rgba(39,54,79,.035);
+        }
+        [class*="st-key-lesson_action_"] a,
+        [class*="st-key-problem_action_"] a,
+        [class*="st-key-done_action_"] button {
+            border-radius: 14px !important;
+            border: 1.5px solid var(--kid-line-strong) !important;
+            box-shadow: none !important;
+            font-weight: 740 !important;
+        }
+        [class*="st-key-lesson_action_"] a {
+            min-height: 62px !important;
+            justify-content: flex-start !important;
+            text-align: left !important;
+            padding: .85rem 1rem !important;
+            background: var(--kid-blue-soft) !important;
+            color: var(--kid-ink) !important;
+        }
+        [class*="st-key-lesson_action_"] a p {
+            font-size: 1.12rem !important;
+            font-weight: 760 !important;
+            line-height: 1.35 !important;
+            white-space: normal !important;
+        }
+        [class*="st-key-problem_action_"] a,
+        [class*="st-key-done_action_"] button {
+            min-height: 48px !important;
+            justify-content: center !important;
+            background: #fff !important;
+            color: var(--kid-blue-strong) !important;
+        }
+        [class*="st-key-problem_action_"] a p,
+        [class*="st-key-done_action_"] button p {
+            font-size: .98rem !important;
+            font-weight: 740 !important;
+        }
+        /* Once 'できた' is tapped, the lesson, its problem, and the done button change together. */
+        [class*="st-key-material_row_done_"] {
+            border-color: #9bcfad !important;
+            background: #f2fbf5 !important;
+        }
+        [class*="st-key-material_row_done_"] a,
+        [class*="st-key-material_row_done_"] button {
+            background: #e6f7eb !important;
+            border-color: #91c9a4 !important;
+            color: #287344 !important;
+        }
+        [class*="st-key-material_row_done_"] a:hover,
+        [class*="st-key-material_row_done_"] button:hover {
+            background: #dcf3e3 !important;
+            border-color: #78bb90 !important;
+        }
+        /* A unit on the top page turns green only when all of its materials are complete. */
+        [class*="st-key-home_unit_done_"] button {
+            background: #eaf8ee !important;
+            border-color: #96ccaa !important;
+            color: #287344 !important;
+        }
+
         /* Study actions use the same radius and weight, avoiding oversized heavy controls. */
         .st-key-complete_action {
             margin-top: 8px;
@@ -747,6 +813,22 @@ def inject_css():
                 font-size: 1.2rem !important;
                 font-weight: 720 !important;
                 line-height: 1.34 !important;
+            }
+            [class*="st-key-material_row_"] {
+                border-radius: 16px;
+                padding: 10px;
+                margin-bottom: 10px;
+            }
+            [class*="st-key-lesson_action_"] a {
+                min-height: 60px !important;
+                padding: .78rem .85rem !important;
+            }
+            [class*="st-key-lesson_action_"] a p {
+                font-size: 1.06rem !important;
+            }
+            [class*="st-key-problem_action_"] a,
+            [class*="st-key-done_action_"] button {
+                min-height: 48px !important;
             }
             .st-key-study_home_top button,
             .st-key-study_home_bottom button {
@@ -1083,60 +1165,148 @@ def fetch_eboard_direct_lessons(url):
     return fallback
 
 
-def _render_eboard_material(material, key_prefix):
+def _safe_widget_token(value):
+    return re.sub(r"[^0-9A-Za-z_]+", "_", str(value or "")).strip("_") or "item"
+
+
+def _lesson_completion_key(unit_id, material_index, lesson_number):
+    return f"{unit_id}:eboard:{int(material_index)}:lesson:{int(lesson_number)}"
+
+
+def _material_completion_key(unit_id, material_index, kind):
+    return f"{unit_id}:{str(kind or 'material').lower()}:{int(material_index)}"
+
+
+def unit_material_completion_keys(unit):
+    keys = []
+    for material_index, material in enumerate(list((unit or {}).get("materials") or [])):
+        kind = str(material.get("kind") or "").strip().lower()
+        if kind == "eboard":
+            lessons = fetch_eboard_direct_lessons(material.get("url"))
+            if lessons:
+                keys.extend(
+                    _lesson_completion_key(unit.get("id"), material_index, int(lesson.get("order") or index + 1))
+                    for index, lesson in enumerate(lessons)
+                )
+            else:
+                keys.append(_material_completion_key(unit.get("id"), material_index, kind))
+        else:
+            keys.append(_material_completion_key(unit.get("id"), material_index, kind))
+    return keys
+
+
+def sync_unit_completion(unit, completed_units, completed_materials):
+    keys = unit_material_completion_keys(unit)
+    unit_id = str((unit or {}).get("id") or "")
+    if unit_id and keys and all(key in completed_materials for key in keys):
+        completed_units.add(unit_id)
+    elif unit_id:
+        completed_units.discard(unit_id)
+
+
+def migrate_legacy_unit_completion(unit, completed_units, completed_materials):
+    """Preserve progress from older versions that had one 'できた' button per unit."""
+    unit_id = str((unit or {}).get("id") or "")
+    if not unit_id or unit_id not in completed_units:
+        return
+    keys = unit_material_completion_keys(unit)
+    if keys and not any(key in completed_materials for key in keys):
+        completed_materials.update(keys)
+
+
+def _toggle_material_done(completion_key, unit, completed_units, completed_materials):
+    if completion_key in completed_materials:
+        completed_materials.discard(completion_key)
+    else:
+        completed_materials.add(completion_key)
+    sync_unit_completion(unit, completed_units, completed_materials)
+
+
+def _render_done_action(completion_key, unit, completed_units, completed_materials, token):
+    done = completion_key in completed_materials
+    state = "done" if done else "open"
+    with st.container(key=f"done_action_{state}_{token}"):
+        if st.button(
+            "✓ できた" if done else "○ できた",
+            use_container_width=True,
+            key=f"done_material_{token}",
+        ):
+            _toggle_material_done(completion_key, unit, completed_units, completed_materials)
+            st.rerun()
+
+
+def _render_eboard_material(unit, material, material_index, completed_units, completed_materials):
     url = str(material.get("url") or "").strip()
     lessons = fetch_eboard_direct_lessons(url)
     if not lessons:
-        st.link_button("▶ この教材をひらく", url, type="primary", use_container_width=True)
+        completion_key = _material_completion_key(unit.get("id"), material_index, "eboard")
+        done = completion_key in completed_materials
+        state = "done" if done else "open"
+        token = _safe_widget_token(completion_key)
+        with st.container(key=f"material_row_{state}_{token}"):
+            with st.container(key=f"lesson_action_{state}_{token}"):
+                st.link_button("▶ この教材をひらく", url, use_container_width=True)
+            _render_done_action(completion_key, unit, completed_units, completed_materials, token)
         return
 
-    for lesson in lessons:
-        number = int(lesson.get("order") or 0)
+    for index, lesson in enumerate(lessons):
+        number = int(lesson.get("order") or index + 1)
         title = str(lesson.get("title") or f"教材 {number}").strip()
         video_url = str(lesson.get("video_url") or "").strip()
         question_url = str(lesson.get("question_url") or "").strip()
-        left, right = st.columns([4.7, 1.55], gap="small")
-        with left:
-            st.link_button(
-                f"▶ {number:02d}　{title}",
-                video_url,
-                type="primary" if number == 1 else "secondary",
-                use_container_width=True,
-            )
-        with right:
+        completion_key = _lesson_completion_key(unit.get("id"), material_index, number)
+        done = completion_key in completed_materials
+        state = "done" if done else "open"
+        token = _safe_widget_token(completion_key)
+
+        with st.container(key=f"material_row_{state}_{token}"):
+            with st.container(key=f"lesson_action_{state}_{token}"):
+                st.link_button(
+                    f"▶ {number:02d}　{title}",
+                    video_url,
+                    use_container_width=True,
+                )
             if question_url:
-                st.link_button(
-                    "✏️ もんだい",
-                    question_url,
-                    use_container_width=True,
-                )
-        if number < len(lessons):
-            st.markdown('<div class="material-gap compact"></div>', unsafe_allow_html=True)
-
-
-def material_buttons(unit):
-    """Make the lesson itself the first tap target; avoid intermediate index pages."""
-    materials = list(unit.get("materials") or [])
-    with st.container(key="study_materials"):
-        for idx, material in enumerate(materials):
-            label = str(material.get("label") or "教材").strip()
-            kind = str(material.get("kind") or "").strip().lower()
-            url = str(material.get("url") or "").strip()
-            if kind == "eboard":
-                _render_eboard_material(material, f"{unit.get('id')}_{idx}")
-            elif kind == "youtube":
-                st.markdown(f'<div class="material-title">▶ {label}</div>', unsafe_allow_html=True)
-                st.video(url)
+                problem_col, done_col = st.columns(2, gap="small")
+                with problem_col:
+                    with st.container(key=f"problem_action_{state}_{token}"):
+                        st.link_button("✏️ もんだい", question_url, use_container_width=True)
+                with done_col:
+                    _render_done_action(completion_key, unit, completed_units, completed_materials, token)
             else:
-                st.link_button(
-                    f"▶ {label}",
-                    url,
-                    type="primary" if idx == 0 else "secondary",
-                    use_container_width=True,
-                )
-            if idx < len(materials) - 1:
-                st.markdown('<div class="material-gap"></div>', unsafe_allow_html=True)
+                _render_done_action(completion_key, unit, completed_units, completed_materials, token)
 
+
+def _render_standard_material(unit, material, material_index, completed_units, completed_materials):
+    label = str(material.get("label") or "教材").strip()
+    kind = str(material.get("kind") or "material").strip().lower()
+    url = str(material.get("url") or "").strip()
+    completion_key = _material_completion_key(unit.get("id"), material_index, kind)
+    done = completion_key in completed_materials
+    state = "done" if done else "open"
+    token = _safe_widget_token(completion_key)
+
+    with st.container(key=f"material_row_{state}_{token}"):
+        if kind == "youtube":
+            with st.container(key=f"lesson_action_{state}_{token}"):
+                st.link_button(f"▶ {label}", url, use_container_width=True)
+            st.video(url)
+        else:
+            with st.container(key=f"lesson_action_{state}_{token}"):
+                st.link_button(f"▶ {label}", url, use_container_width=True)
+        _render_done_action(completion_key, unit, completed_units, completed_materials, token)
+
+
+def material_buttons(unit, completed_units, completed_materials):
+    """Show only the shortest study path. Every material has its own completion button."""
+    materials = list((unit or {}).get("materials") or [])
+    with st.container(key="study_materials"):
+        for material_index, material in enumerate(materials):
+            kind = str(material.get("kind") or "").strip().lower()
+            if kind == "eboard":
+                _render_eboard_material(unit, material, material_index, completed_units, completed_materials)
+            else:
+                _render_standard_material(unit, material, material_index, completed_units, completed_materials)
 
 def grade_units(grade):
     return sorted([u for u in UNITS if u["grade"] == grade], key=lambda x: x["order"])
@@ -1148,12 +1318,18 @@ def completion_state():
     return st.session_state.completed_units
 
 
+def material_completion_state():
+    if "completed_materials" not in st.session_state:
+        st.session_state.completed_materials = set()
+    return st.session_state.completed_materials
+
+
 def apply_requested_home_reset():
     """Clear transient study UI before any page widgets are rebuilt."""
     if not bool(st.session_state.get("_reset_to_home_requested")):
         return
     # Keep only learning progress and the parent-entered API key. Everything else is UI state.
-    keep_keys = {"completed_units", "openai_api_key"}
+    keep_keys = {"completed_units", "completed_materials"}
     for key in list(st.session_state.keys()):
         if key not in keep_keys:
             st.session_state.pop(key, None)
@@ -1174,6 +1350,7 @@ def main():
     apply_requested_home_reset()
     inject_css()
     completed = completion_state()
+    completed_materials = material_completion_state()
 
     selected_unit_id = str(st.session_state.get("selected_unit_id") or "").strip()
     selected_unit = next((u for u in UNITS if u["id"] == selected_unit_id), None)
@@ -1214,14 +1391,16 @@ def main():
                 status = "✓　" if unit["id"] in completed else ""
                 label = f"{status}{unit['order']:02d}　{unit['title']}"
                 with cols[index % 2]:
-                    if st.button(
-                        label,
-                        use_container_width=True,
-                        key=f"home_unit_{unit['id']}",
-                    ):
-                        st.session_state["selected_unit_id"] = unit["id"]
-                        st.session_state["home_grade_value"] = grade
-                        st.rerun()
+                    unit_state = "done" if unit["id"] in completed else "open"
+                    with st.container(key=f"home_unit_{unit_state}_{_safe_widget_token(unit['id'])}"):
+                        if st.button(
+                            label,
+                            use_container_width=True,
+                            key=f"home_unit_{unit['id']}",
+                        ):
+                            st.session_state["selected_unit_id"] = unit["id"]
+                            st.session_state["home_grade_value"] = grade
+                            st.rerun()
 
         with st.expander("おうちの方へ"):
             st.caption("学習内容の基準・教材")
@@ -1257,161 +1436,10 @@ def main():
         unsafe_allow_html=True,
     )
 
-    tab1, tab2, tab3, tab4 = st.tabs(["▶ まなぶ", "💬 AI先生", "📚 教材＋AI", "📷 しゃしん"])
-
-    with tab1:
-        # The first useful action is the material itself: no heading and no extra "open" button.
-        material_buttons(unit)
-        # Practice is paired with each eboard lesson above. Do not send children to
-        # a broad grade-level exercise index that may not match what they just studied.
-        with st.expander("💡 ヒント"):
-            st.markdown(f"**できるようになること**  {unit['goal']}")
-            st.write(unit["point"])
-            st.caption(f"前にできているとよいこと：{unit['prereq']}")
-
-        with st.container(key="complete_action"):
-            if unit["id"] in completed:
-                if st.button("✓ できた　取り消す", use_container_width=True):
-                    completed.discard(unit["id"])
-                    st.rerun()
-            else:
-                if st.button("✓ できた", use_container_width=True):
-                    completed.add(unit["id"])
-                    st.rerun()
-
-    with tab2:
-        st.subheader("AI先生に聞く")
-        quick_col1, quick_col2, quick_col3 = st.columns(3)
-        quick_prompt = None
-        with quick_col1:
-            if st.button("5分で教えて", use_container_width=True):
-                quick_prompt = "この単元を、最初に学ぶ子向けに5分で読める長さで教えて。最後に確認問題を1問出して。"
-        with quick_col2:
-            if st.button("もっとやさしく", use_container_width=True):
-                quick_prompt = "この単元を、具体物や身近な例を使って、とてもやさしく説明して。"
-        with quick_col3:
-            if st.button("問題を3もん", use_container_width=True):
-                quick_prompt = "この単元の練習問題を、やさしい→標準の順に3問出して。答えは最初は隠して。"
-
-        question = st.text_area("ききたいこと", placeholder="ここが わからない！", key=f"q_{unit['id']}")
-        send = st.button("AI先生に聞く", type="primary", key=f"send_{unit['id']}")
-        request_text = quick_prompt or (question.strip() if send else None)
-        if request_text:
-            try:
-                with st.spinner("AI先生が考えています"):
-                    answer = ask_openai(request_text, unit)
-                st.markdown(answer)
-            except Exception as exc:
-                st.error(str(exc))
-                st.info("APIキーがなくても『▶ まなぶ』の教材は使えます。おうちの方が下の設定からAPIキーを入力するとAI機能が使えます。")
-
-    with tab3:
-        st.subheader("教材を見ながらAI先生に聞く")
-        material_labels = [f"{i + 1}. {m['label']}" for i, m in enumerate(unit["materials"])]
-        selected_material_label = st.selectbox(
-            "教材",
-            material_labels,
-            key=f"material_select_{unit['id']}",
-        )
-        material_index = material_labels.index(selected_material_label)
-        selected_material = unit["materials"][material_index]
-
-        st.caption(f"{material_type_label(selected_material['kind'])}｜{material_note(selected_material['kind'])}")
-        if selected_material["kind"] == "youtube":
-            st.video(selected_material["url"])
-        else:
-            st.link_button("教材をひらく", selected_material["url"], use_container_width=True)
-
-        context_key = f"source_context_{unit['id']}_{material_index}"
-        label_key = f"source_label_{unit['id']}_{material_index}"
-
-        if st.button("この教材をAI先生に読んでもらう", type="primary", key=f"load_material_{unit['id']}_{material_index}"):
-            try:
-                with st.spinner("教材を読み込んでいます"):
-                    if selected_material["kind"] == "youtube":
-                        video_id = extract_youtube_id(selected_material["url"])
-                        if not video_id:
-                            raise RuntimeError("登録されているYouTube URLを確認できませんでした。")
-                        source_context = fetch_youtube_transcript(video_id)
-                    else:
-                        source_context = fetch_web_text(selected_material["url"])
-                st.session_state[context_key] = source_context
-                st.session_state[label_key] = selected_material["label"]
-                st.success("読み込みました。下からAI先生に聞けます。")
-            except Exception as exc:
-                st.warning(f"教材本文・字幕の自動取得ができませんでした：{exc}")
-                fallback = f"単元名: {unit['title']}\n学習目標: {unit['goal']}\n学習のポイント: {unit['point']}"
-                st.session_state[context_key] = fallback
-                st.session_state[label_key] = selected_material["label"] + "（単元情報を使用）"
-                st.info("教材自体はそのまま使えます。AI先生は登録済みの単元情報を基準に説明します。")
-
-        source_context = st.session_state.get(context_key, "")
-        source_label = st.session_state.get(label_key, selected_material["label"])
-
-        if source_context:
-            q1, q2, q3 = st.columns(3)
-            material_prompt = None
-            with q1:
-                if st.button("だいじな3つ", use_container_width=True, key=f"mp1_{unit['id']}_{material_index}"):
-                    material_prompt = "この教材で大事なところを、小学生向けに3つだけ説明して。"
-            with q2:
-                if st.button("もっとやさしく", use_container_width=True, key=f"mp2_{unit['id']}_{material_index}"):
-                    material_prompt = "この教材の内容を、具体物や簡単な例を使ってもっとやさしく説明して。"
-            with q3:
-                if st.button("問題を3もん", use_container_width=True, key=f"mp3_{unit['id']}_{material_index}"):
-                    material_prompt = "この教材の内容から確認問題を3問出して。答えは最初は見せないで。"
-
-            material_question = st.text_area(
-                "教材でわからないところ",
-                placeholder="ここを もう一ど おしえて！",
-                key=f"material_q_{unit['id']}_{material_index}",
-            )
-            ask_material = st.button("AI先生に聞く", key=f"material_send_{unit['id']}_{material_index}")
-            request_text = material_prompt or (material_question.strip() if ask_material else None)
-            if request_text:
-                try:
-                    with st.spinner("教材の内容に沿って説明しています"):
-                        answer = ask_openai(
-                            request_text,
-                            unit,
-                            source_context=source_context,
-                            source_label=source_label,
-                        )
-                    st.markdown(answer)
-                except Exception as exc:
-                    st.error(str(exc))
-        else:
-            st.info("先に『この教材をAI先生に読んでもらう』を押してください。")
-
-    with tab4:
-        st.subheader("ノートや答案を見てもらう")
-        uploaded = st.file_uploader(
-            "しゃしんを えらぶ",
-            type=["png", "jpg", "jpeg", "webp"],
-            key=f"upload_{unit['id']}",
-        )
-        if uploaded is not None:
-            st.image(uploaded, caption="この写真を見てもらいます", use_container_width=True)
-            extra = st.text_input("ひとこと（なくてもOK）", placeholder="ヒントだけほしい", key=f"extra_{unit['id']}")
-            if st.button("AI先生に見てもらう", type="primary", key=f"grade_{unit['id']}"):
-                try:
-                    image_bytes = uploaded.getvalue()
-                    with st.spinner("答案を確認しています"):
-                        answer = ask_openai(
-                            extra or "この答案を学年に合う言葉で添削して。",
-                            unit,
-                            image_bytes=image_bytes,
-                            image_mime=uploaded.type,
-                        )
-                    st.markdown(answer)
-                except Exception as exc:
-                    st.error(str(exc))
-
-    st.divider()
-    with st.expander("おうちの方へ・AI設定"):
-        st.write("OpenAI APIキーを設定すると、AI先生・教材への質問・答案添削が使えます。")
-        st.text_input("OpenAI API Key", type="password", key="openai_api_key")
-        st.caption("この試作版はAI処理に gpt-5.6-luna を使用します。")
+    # Keep the child path direct: lesson -> matching problem -> done.
+    migrate_legacy_unit_completion(unit, completed, completed_materials)
+    sync_unit_completion(unit, completed, completed_materials)
+    material_buttons(unit, completed, completed_materials)
 
     render_home_reset_button("bottom")
 
