@@ -512,7 +512,7 @@ def inject_css():
             --kid-ink: #25324a;
             --kid-muted: #68738a;
         }
-        .block-container {padding-top: .9rem; padding-bottom: 3rem; max-width: 980px;}
+        .block-container {padding-top: 3.6rem !important; padding-bottom: 3rem; max-width: 980px;}
         .main-title {
             font-size: 2.55rem; font-weight: 900; line-height: 1.15; margin-bottom: .15rem;
             letter-spacing: .01em; color: var(--kid-ink);
@@ -521,7 +521,7 @@ def inject_css():
             font-size: 1.85rem; font-weight: 900; margin: .8rem 0 .35rem 0; color: var(--kid-ink);
         }
         .subtle {color: var(--kid-muted); font-size: .92rem;}
-        .progress-line {font-size: .92rem; font-weight: 750; color: var(--kid-muted); margin: .15rem 0 .35rem 0;}
+        .progress-line {font-size: 1.18rem; font-weight: 800; color: var(--kid-muted); margin: .15rem 0 .35rem 0;}
         .unit-card {
             border: 1px solid rgba(79,124,255,.18); border-radius: 20px; padding: 18px 20px;
             margin: 8px 0 14px 0; background: rgba(248,250,255,.8);
@@ -546,13 +546,25 @@ def inject_css():
             font-weight: 900; font-size: 1.2rem;
         }
         .st-key-unit_picker_grid button {
-            min-height: 112px !important; border-radius: 20px !important;
+            min-height: 168px !important; border-radius: 24px !important;
             border: 2px solid rgba(79,124,255,.18) !important;
             background: #fff !important; color: var(--kid-ink) !important;
-            font-size: 1.72rem !important; font-weight: 900 !important; line-height: 1.32 !important;
+            font-size: 2.65rem !important; font-weight: 900 !important; line-height: 1.2 !important;
             text-align: left !important; justify-content: flex-start !important;
-            padding: 1.15rem 1.15rem !important;
+            padding: 1.35rem 1.45rem !important;
             box-shadow: 0 3px 10px rgba(36,50,74,.05);
+        }
+        /* Streamlit gives the text inside a button its own <p> font size. Target it
+           explicitly so the child-facing unit names really render large. */
+        .st-key-unit_picker_grid button p,
+        .st-key-unit_picker_grid div[data-testid="stButton"] button p {
+            font-size: 2.65rem !important;
+            font-weight: 900 !important;
+            line-height: 1.2 !important;
+            letter-spacing: .01em !important;
+            white-space: normal !important;
+            overflow-wrap: anywhere !important;
+            margin: 0 !important;
         }
         .st-key-unit_picker_grid button:hover {
             border-color: rgba(79,124,255,.55) !important; background: var(--kid-blue-soft) !important;
@@ -571,16 +583,22 @@ def inject_css():
         .st-key-study_home_bottom {margin-top: 16px;}
 
         @media (max-width: 700px) {
-            .block-container {padding-top: .65rem; padding-left: .75rem; padding-right: .75rem;}
-            .main-title {font-size: 2.15rem;}
-            .home-question {font-size: 1.6rem; margin-top: .7rem;}
+            .block-container {padding-top: 3.9rem !important; padding-left: .75rem; padding-right: .75rem;}
+            .main-title {font-size: 2.55rem; line-height: 1.14;}
+            .home-question {font-size: 2.15rem; line-height: 1.2; margin-top: .85rem;}
             .unit-card {padding: 14px 14px; border-radius: 17px;}
             .unit-title {font-size: 1.35rem;}
             .st-key-home_grade [role="radiogroup"] {gap: .35rem;}
-            .st-key-home_grade [role="radiogroup"] label {min-width: 82px; min-height: 54px; padding: .45rem .65rem; font-size: 1.12rem;}
+            .st-key-home_grade [role="radiogroup"] label {min-width: 88px; min-height: 60px; padding: .5rem .7rem; font-size: 1.28rem;}
+            .st-key-home_grade [role="radiogroup"] label p {font-size: 1.28rem !important; font-weight: 900 !important;}
             .st-key-unit_picker_grid button {
-                min-height: 104px !important; font-size: 1.58rem !important; line-height: 1.35 !important;
-                padding: 1rem 1rem !important;
+                min-height: 154px !important; font-size: 2.35rem !important; line-height: 1.18 !important;
+                padding: 1.15rem 1.15rem !important;
+            }
+            .st-key-unit_picker_grid button p,
+            .st-key-unit_picker_grid div[data-testid="stButton"] button p {
+                font-size: 2.35rem !important;
+                line-height: 1.18 !important;
             }
             .st-key-study_home_top button,
             .st-key-study_home_bottom button {
