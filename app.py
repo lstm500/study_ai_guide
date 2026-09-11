@@ -514,11 +514,11 @@ def inject_css():
         }
         .block-container {padding-top: .9rem; padding-bottom: 3rem; max-width: 980px;}
         .main-title {
-            font-size: 2.15rem; font-weight: 900; line-height: 1.15; margin-bottom: .15rem;
+            font-size: 2.55rem; font-weight: 900; line-height: 1.15; margin-bottom: .15rem;
             letter-spacing: .01em; color: var(--kid-ink);
         }
         .home-question {
-            font-size: 1.5rem; font-weight: 900; margin: .8rem 0 .35rem 0; color: var(--kid-ink);
+            font-size: 1.85rem; font-weight: 900; margin: .8rem 0 .35rem 0; color: var(--kid-ink);
         }
         .subtle {color: var(--kid-muted); font-size: .92rem;}
         .progress-line {font-size: .92rem; font-weight: 750; color: var(--kid-muted); margin: .15rem 0 .35rem 0;}
@@ -542,16 +542,16 @@ def inject_css():
         .st-key-home_grade [role="radiogroup"] {gap: .55rem;}
         .st-key-home_grade [role="radiogroup"] label {
             border: 2px solid rgba(79,124,255,.22); border-radius: 16px; padding: .45rem .9rem;
-            min-width: 82px; min-height: 48px; justify-content: center; background: #fff;
-            font-weight: 850;
+            min-width: 96px; min-height: 58px; justify-content: center; background: #fff;
+            font-weight: 900; font-size: 1.2rem;
         }
         .st-key-unit_picker_grid button {
-            min-height: 88px !important; border-radius: 18px !important;
+            min-height: 112px !important; border-radius: 20px !important;
             border: 2px solid rgba(79,124,255,.18) !important;
             background: #fff !important; color: var(--kid-ink) !important;
-            font-size: 1.26rem !important; font-weight: 900 !important; line-height: 1.35 !important;
+            font-size: 1.72rem !important; font-weight: 900 !important; line-height: 1.32 !important;
             text-align: left !important; justify-content: flex-start !important;
-            padding: 1rem 1.05rem !important;
+            padding: 1.15rem 1.15rem !important;
             box-shadow: 0 3px 10px rgba(36,50,74,.05);
         }
         .st-key-unit_picker_grid button:hover {
@@ -562,15 +562,15 @@ def inject_css():
 
         @media (max-width: 700px) {
             .block-container {padding-top: .65rem; padding-left: .75rem; padding-right: .75rem;}
-            .main-title {font-size: 1.75rem;}
-            .home-question {font-size: 1.28rem; margin-top: .6rem;}
+            .main-title {font-size: 2.15rem;}
+            .home-question {font-size: 1.6rem; margin-top: .7rem;}
             .unit-card {padding: 14px 14px; border-radius: 17px;}
             .unit-title {font-size: 1.35rem;}
             .st-key-home_grade [role="radiogroup"] {gap: .35rem;}
-            .st-key-home_grade [role="radiogroup"] label {min-width: 70px; padding: .35rem .55rem;}
+            .st-key-home_grade [role="radiogroup"] label {min-width: 82px; min-height: 54px; padding: .45rem .65rem; font-size: 1.12rem;}
             .st-key-unit_picker_grid button {
-                min-height: 80px !important; font-size: 1.18rem !important; line-height: 1.4 !important;
-                padding: .85rem .9rem !important;
+                min-height: 104px !important; font-size: 1.58rem !important; line-height: 1.35 !important;
+                padding: 1rem 1rem !important;
             }
         }
         </style>
@@ -838,7 +838,7 @@ def main():
             for index, unit in enumerate(units):
                 status = "✓ " if unit["id"] in completed else ""
                 icon = domain_icon.get(unit.get("domain"), "✏️")
-                label = f"{status}{unit['order']:02d}. {unit['title']}   {icon}"
+                label = f"{status}{unit['order']:02d}　{unit['title']}   {icon}"
                 with cols[index % 2]:
                     if st.button(
                         label,
