@@ -546,25 +546,28 @@ def inject_css():
             font-weight: 900; font-size: 1.2rem;
         }
         .st-key-unit_picker_grid button {
-            min-height: 168px !important; border-radius: 24px !important;
+            height: 132px !important; min-height: 132px !important; max-height: 132px !important;
+            border-radius: 22px !important;
             border: 2px solid rgba(79,124,255,.18) !important;
             background: #fff !important; color: var(--kid-ink) !important;
-            font-size: 2.65rem !important; font-weight: 900 !important; line-height: 1.2 !important;
-            text-align: left !important; justify-content: flex-start !important;
-            padding: 1.35rem 1.45rem !important;
+            font-size: 1.85rem !important; font-weight: 900 !important; line-height: 1.22 !important;
+            text-align: left !important; justify-content: flex-start !important; align-items: center !important;
+            padding: 1rem 1.2rem !important;
             box-shadow: 0 3px 10px rgba(36,50,74,.05);
+            overflow: hidden !important;
         }
         /* Streamlit gives the text inside a button its own <p> font size. Target it
            explicitly so the child-facing unit names really render large. */
         .st-key-unit_picker_grid button p,
         .st-key-unit_picker_grid div[data-testid="stButton"] button p {
-            font-size: 2.65rem !important;
+            font-size: 1.85rem !important;
             font-weight: 900 !important;
-            line-height: 1.2 !important;
+            line-height: 1.22 !important;
             letter-spacing: .01em !important;
             white-space: normal !important;
             overflow-wrap: anywhere !important;
             margin: 0 !important;
+            width: 100% !important;
         }
         .st-key-unit_picker_grid button:hover {
             border-color: rgba(79,124,255,.55) !important; background: var(--kid-blue-soft) !important;
@@ -592,13 +595,14 @@ def inject_css():
             .st-key-home_grade [role="radiogroup"] label {min-width: 88px; min-height: 60px; padding: .5rem .7rem; font-size: 1.28rem;}
             .st-key-home_grade [role="radiogroup"] label p {font-size: 1.28rem !important; font-weight: 900 !important;}
             .st-key-unit_picker_grid button {
-                min-height: 154px !important; font-size: 2.35rem !important; line-height: 1.18 !important;
-                padding: 1.15rem 1.15rem !important;
+                height: 126px !important; min-height: 126px !important; max-height: 126px !important;
+                font-size: 1.65rem !important; line-height: 1.2 !important;
+                padding: .9rem 1rem !important;
             }
             .st-key-unit_picker_grid button p,
             .st-key-unit_picker_grid div[data-testid="stButton"] button p {
-                font-size: 2.35rem !important;
-                line-height: 1.18 !important;
+                font-size: 1.65rem !important;
+                line-height: 1.2 !important;
             }
             .st-key-study_home_top button,
             .st-key-study_home_bottom button {
