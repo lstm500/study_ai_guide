@@ -504,24 +504,78 @@ def inject_css():
     st.markdown(
         """
         <style>
-        .block-container {padding-top: 1.2rem; padding-bottom: 3rem; max-width: 1100px;}
-        .main-title {font-size: 2.1rem; font-weight: 800; line-height: 1.2; margin-bottom: .25rem;}
-        .subtle {color: #6b7280; font-size: .93rem;}
-        .unit-card {border: 1px solid rgba(120,120,120,.22); border-radius: 18px; padding: 18px 20px; margin: 10px 0 14px 0;}
-        .unit-title {font-size: 1.35rem; font-weight: 800; margin-bottom: .2rem;}
-        .chip {display:inline-block; border:1px solid rgba(120,120,120,.35); border-radius:999px; padding:3px 9px; font-size:.8rem; margin-right:6px;}
-        .goal-box {border-radius:14px; padding:14px 16px; background:rgba(120,120,120,.07); margin-top:10px;}
-        .tiny {font-size:.82rem; color:#6b7280;}
-        div[data-testid="stMetricValue"] {font-size:1.35rem;}
+        :root {
+            --kid-blue: #4f7cff;
+            --kid-blue-soft: #eef4ff;
+            --kid-yellow: #fff5c7;
+            --kid-green: #e9f8ee;
+            --kid-ink: #25324a;
+            --kid-muted: #68738a;
+        }
+        .block-container {padding-top: .9rem; padding-bottom: 3rem; max-width: 980px;}
+        .main-title {
+            font-size: 2.15rem; font-weight: 900; line-height: 1.15; margin-bottom: .15rem;
+            letter-spacing: .01em; color: var(--kid-ink);
+        }
+        .home-question {
+            font-size: 1.5rem; font-weight: 900; margin: .8rem 0 .35rem 0; color: var(--kid-ink);
+        }
+        .subtle {color: var(--kid-muted); font-size: .92rem;}
+        .progress-line {font-size: .92rem; font-weight: 750; color: var(--kid-muted); margin: .15rem 0 .35rem 0;}
+        .unit-card {
+            border: 1px solid rgba(79,124,255,.18); border-radius: 20px; padding: 18px 20px;
+            margin: 8px 0 14px 0; background: rgba(248,250,255,.8);
+        }
+        .unit-title {font-size: 1.55rem; font-weight: 900; margin-bottom: .25rem; color: var(--kid-ink);}
+        .chip {
+            display:inline-block; border:1px solid rgba(79,124,255,.25); border-radius:999px;
+            padding:4px 10px; font-size:.82rem; margin-right:6px; background: var(--kid-blue-soft);
+        }
+        .goal-box {
+            border-radius:16px; padding:14px 16px; background: var(--kid-yellow); margin-top:12px;
+            font-size: 1rem; line-height: 1.65;
+        }
+        .tiny {font-size:.82rem; color:var(--kid-muted);}
+        div[data-testid="stMetricValue"] {font-size:1.2rem;}
+
+        /* Home: make grade choice and units large enough for children to tap directly. */
+        .st-key-home_grade [role="radiogroup"] {gap: .55rem;}
+        .st-key-home_grade [role="radiogroup"] label {
+            border: 2px solid rgba(79,124,255,.22); border-radius: 16px; padding: .45rem .9rem;
+            min-width: 82px; min-height: 48px; justify-content: center; background: #fff;
+            font-weight: 850;
+        }
+        .st-key-unit_picker_grid button {
+            min-height: 78px !important; border-radius: 18px !important;
+            border: 2px solid rgba(79,124,255,.18) !important;
+            background: #fff !important; color: var(--kid-ink) !important;
+            font-size: 1.05rem !important; font-weight: 850 !important; line-height: 1.35 !important;
+            text-align: left !important; justify-content: flex-start !important;
+            padding: .85rem 1rem !important;
+            box-shadow: 0 3px 10px rgba(36,50,74,.05);
+        }
+        .st-key-unit_picker_grid button:hover {
+            border-color: rgba(79,124,255,.55) !important; background: var(--kid-blue-soft) !important;
+        }
+        .st-key-study_back button {border-radius: 999px !important; font-weight: 800 !important;}
+        .st-key-complete_action button {min-height: 50px !important; border-radius: 15px !important; font-weight: 850 !important;}
+
         @media (max-width: 700px) {
-            .main-title {font-size: 1.65rem;}
-            .unit-card {padding: 14px 14px;}
+            .block-container {padding-top: .65rem; padding-left: .75rem; padding-right: .75rem;}
+            .main-title {font-size: 1.75rem;}
+            .home-question {font-size: 1.28rem; margin-top: .6rem;}
+            .unit-card {padding: 14px 14px; border-radius: 17px;}
+            .unit-title {font-size: 1.35rem;}
+            .st-key-home_grade [role="radiogroup"] {gap: .35rem;}
+            .st-key-home_grade [role="radiogroup"] label {min-width: 70px; padding: .35rem .55rem;}
+            .st-key-unit_picker_grid button {
+                min-height: 68px !important; font-size: 1rem !important; padding: .7rem .8rem !important;
+            }
         }
         </style>
         """,
         unsafe_allow_html=True,
     )
-
 
 def get_api_key():
     key = st.session_state.get("openai_api_key", "").strip()
@@ -738,93 +792,129 @@ def main():
     inject_css()
     completed = completion_state()
 
-    st.markdown('<div class="main-title">算数ナビ AI先生</div>', unsafe_allow_html=True)
-    st.markdown(
-        '<div class="subtle">文部科学省の学習指導要領を骨格に、小学1〜3年の算数を選定済み教材とAI先生で学ぶ試作版です。</div>',
-        unsafe_allow_html=True,
-    )
+    selected_unit_id = str(st.session_state.get("selected_unit_id") or "").strip()
+    selected_unit = next((u for u in UNITS if u["id"] == selected_unit_id), None)
 
-    top1, top2, top3 = st.columns([1.2, 1.2, 2.6])
-    with top1:
-        grade = st.radio("学年", [1, 2, 3], horizontal=True, format_func=lambda x: f"小{x}")
-    units = grade_units(grade)
-    done_count = sum(1 for u in units if u["id"] in completed)
-    with top2:
-        st.metric("学習済み", f"{done_count}/{len(units)}")
-    with top3:
-        st.markdown("**この学年の進み具合**")
+    # ------------------------------------------------------------
+    # HOME: children choose a grade, then tap a large unit button.
+    # Keep explanations and parent-facing reference material off the main path.
+    # ------------------------------------------------------------
+    if selected_unit is None:
+        st.markdown('<div class="main-title">🧮 さんすうナビ</div>', unsafe_allow_html=True)
+        st.markdown('<div class="home-question">きょうは どれを やる？</div>', unsafe_allow_html=True)
+
+        default_grade = int(st.session_state.get("home_grade_value") or 1)
+        if default_grade not in {1, 2, 3}:
+            default_grade = 3
+        with st.container(key="home_grade"):
+            grade = st.radio(
+                "がくねん",
+                [1, 2, 3],
+                horizontal=True,
+                index=[1, 2, 3].index(default_grade),
+                format_func=lambda x: f"小{x}",
+                key="home_grade_radio",
+            )
+        st.session_state["home_grade_value"] = grade
+
+        units = grade_units(grade)
+        done_count = sum(1 for u in units if u["id"] in completed)
+        st.markdown(
+            f'<div class="progress-line">できた　{done_count} / {len(units)}</div>',
+            unsafe_allow_html=True,
+        )
         st.progress(done_count / max(1, len(units)))
 
-    with st.expander("このアプリの基準資料・教材について"):
-        st.write("カリキュラムの骨格は文部科学省『小学校学習指導要領（平成29年告示）解説 算数編』に合わせています。教科書会社によって単元名・学習順は異なるため、アプリでは内容を学習しやすい単位に整理しています。")
-        c1, c2, c3 = st.columns(3)
-        with c1:
-            st.link_button("文科省 解説ページ", MEXT_URL, use_container_width=True)
-        with c2:
-            st.link_button("算数編 PDF", MEXT_MATH_PDF, use_container_width=True)
-        with c3:
-            st.link_button("eboard 算数一覧", EBOARD_URL, use_container_width=True)
+        domain_icon = {
+            "A 数と計算": "🧮",
+            "B 図形": "🔷",
+            "C 測定": "📏",
+            "D データの活用": "📊",
+        }
 
-    labels = []
-    label_to_unit = {}
-    for u in units:
-        mark = "✓" if u["id"] in completed else "○"
-        label = f"{mark} {u['order']:02d}. {u['title']}  ｜ {DOMAIN_SHORT.get(u['domain'], u['domain'])}"
-        labels.append(label)
-        label_to_unit[label] = u
+        with st.container(key="unit_picker_grid"):
+            cols = st.columns(2)
+            for index, unit in enumerate(units):
+                status = "✓ " if unit["id"] in completed else ""
+                icon = domain_icon.get(unit.get("domain"), "✏️")
+                label = f"{status}{unit['order']:02d}. {unit['title']}   {icon}"
+                with cols[index % 2]:
+                    if st.button(
+                        label,
+                        use_container_width=True,
+                        key=f"home_unit_{unit['id']}",
+                    ):
+                        st.session_state["selected_unit_id"] = unit["id"]
+                        st.session_state["home_grade_value"] = grade
+                        st.rerun()
 
-    selected_label = st.selectbox("学ぶ単元を選ぶ", labels)
-    unit = label_to_unit[selected_label]
+        with st.expander("おうちの方へ"):
+            st.caption("学習内容の基準・教材")
+            st.write(
+                "カリキュラムの骨格は文部科学省『小学校学習指導要領（平成29年告示）解説 算数編』に合わせています。"
+                "教科書会社によって単元名・学習順は異なるため、アプリでは内容を学習しやすい単位に整理しています。"
+            )
+            c1, c2, c3 = st.columns(3)
+            with c1:
+                st.link_button("文科省", MEXT_URL, use_container_width=True)
+            with c2:
+                st.link_button("算数編 PDF", MEXT_MATH_PDF, use_container_width=True)
+            with c3:
+                st.link_button("eboard", EBOARD_URL, use_container_width=True)
+        return
+
+    # ------------------------------------------------------------
+    # STUDY VIEW: details appear only after the child chooses a unit.
+    # ------------------------------------------------------------
+    unit = selected_unit
+    grade = int(unit["grade"])
+    units = grade_units(grade)
+
+    with st.container(key="study_back"):
+        if st.button("← たんげんを えらぶ", use_container_width=False):
+            st.session_state.pop("selected_unit_id", None)
+            st.rerun()
 
     st.markdown(
         f"""
         <div class="unit-card">
           <div class="unit-title">{unit['order']:02d}. {unit['title']}</div>
-          <span class="chip">小学{unit['grade']}年</span><span class="chip">{unit['domain']}</span>
-          <div class="goal-box"><b>できるようになること</b><br>{unit['goal']}</div>
-          <p><b>学習のポイント</b><br>{unit['point']}</p>
-          <p class="tiny"><b>前にできているとよいこと：</b>{unit['prereq']}</p>
+          <span class="chip">小学{unit['grade']}年</span><span class="chip">{DOMAIN_SHORT.get(unit['domain'], unit['domain'])}</span>
+          <div class="goal-box"><b>ここまで できたら OK！</b><br>{unit['goal']}</div>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
-    c1, c2 = st.columns([1, 3])
-    with c1:
+    with st.expander("💡 このたんげんのヒント"):
+        st.write(unit["point"])
+        st.caption(f"前にできているとよいこと：{unit['prereq']}")
+
+    with st.container(key="complete_action"):
         if unit["id"] in completed:
-            if st.button("学習済みを取り消す", use_container_width=True):
+            if st.button("✓ できた！　もう一度やる", use_container_width=True):
                 completed.discard(unit["id"])
                 st.rerun()
         else:
-            if st.button("この単元を学習済みにする", type="primary", use_container_width=True):
+            if st.button("できた！ ✓", type="primary", use_container_width=True):
                 completed.add(unit["id"])
                 st.rerun()
-    with c2:
-        incomplete = [u for u in units if u["id"] not in completed]
-        if incomplete:
-            st.caption(f"次の未学習単元：{incomplete[0]['title']}")
-        else:
-            st.caption("この学年の登録単元はすべて学習済みです。")
 
-    tab1, tab2, tab3, tab4 = st.tabs(["おすすめ教材", "AI先生", "教材とAI先生", "答案を添削"])
+    tab1, tab2, tab3, tab4 = st.tabs(["▶ みる", "💬 AI先生", "📚 教材＋AI", "📷 しゃしん"])
 
     with tab1:
-        st.subheader("こちらで選定済みの教材")
-        st.write("教材を自分で探す必要はありません。上から順に使えば、この単元の学習を始められます。")
+        st.subheader("まず これを見よう")
         material_buttons(unit)
         st.divider()
-        st.markdown("**学んだ後の練習**")
-        st.caption("北海道教育委員会が家庭学習向けに公開している学年別・単元別問題です。")
+        st.markdown("**れんしゅうする**")
         st.link_button(
-            f"北海道教育委員会：小学{grade}年 単元別問題",
+            f"小学{grade}年の問題をひらく",
             OFFICIAL_PRACTICE[grade],
             use_container_width=True,
         )
-        st.caption("外部教材は公開状況が変わる場合があります。リンク切れはアプリ側の教材リスト更新で差し替える前提です。")
 
     with tab2:
         st.subheader("AI先生に聞く")
-        st.write("この単元の目標と学年を前提に、説明の難しさを調整します。")
         quick_col1, quick_col2, quick_col3 = st.columns(3)
         quick_prompt = None
         with quick_col1:
@@ -834,10 +924,10 @@ def main():
             if st.button("もっとやさしく", use_container_width=True):
                 quick_prompt = "この単元を、具体物や身近な例を使って、とてもやさしく説明して。"
         with quick_col3:
-            if st.button("練習問題を3問", use_container_width=True):
+            if st.button("問題を3もん", use_container_width=True):
                 quick_prompt = "この単元の練習問題を、やさしい→標準の順に3問出して。答えは最初は隠して。"
 
-        question = st.text_area("質問を書く", placeholder="例：8+7で、どうして10を先につくるの？", key=f"q_{unit['id']}")
+        question = st.text_area("ききたいこと", placeholder="ここが わからない！", key=f"q_{unit['id']}")
         send = st.button("AI先生に聞く", type="primary", key=f"send_{unit['id']}")
         request_text = quick_prompt or (question.strip() if send else None)
         if request_text:
@@ -847,15 +937,13 @@ def main():
                 st.markdown(answer)
             except Exception as exc:
                 st.error(str(exc))
-                st.info("APIキーがなくても、上の『動画・教材』は利用できます。下の設定からAPIキーを入力するとAI機能が使えます。")
+                st.info("APIキーがなくても『▶ みる』の教材は使えます。おうちの方が下の設定からAPIキーを入力するとAI機能が使えます。")
 
     with tab3:
-        st.subheader("選定済み教材をAI先生と見る")
-        st.write("この単元に登録済みの教材を選び、AI先生に内容を読み込ませます。URLを自分で探して貼る必要はありません。")
-
+        st.subheader("教材を見ながらAI先生に聞く")
         material_labels = [f"{i + 1}. {m['label']}" for i, m in enumerate(unit["materials"])]
         selected_material_label = st.selectbox(
-            "AI先生と使う教材",
+            "教材",
             material_labels,
             key=f"material_select_{unit['id']}",
         )
@@ -866,12 +954,12 @@ def main():
         if selected_material["kind"] == "youtube":
             st.video(selected_material["url"])
         else:
-            st.link_button("教材ページを開く", selected_material["url"], use_container_width=True)
+            st.link_button("教材をひらく", selected_material["url"], use_container_width=True)
 
         context_key = f"source_context_{unit['id']}_{material_index}"
         label_key = f"source_label_{unit['id']}_{material_index}"
 
-        if st.button("この教材をAI先生に読み込む", type="primary", key=f"load_material_{unit['id']}_{material_index}"):
+        if st.button("この教材をAI先生に読んでもらう", type="primary", key=f"load_material_{unit['id']}_{material_index}"):
             try:
                 with st.spinner("教材を読み込んでいます"):
                     if selected_material["kind"] == "youtube":
@@ -883,37 +971,36 @@ def main():
                         source_context = fetch_web_text(selected_material["url"])
                 st.session_state[context_key] = source_context
                 st.session_state[label_key] = selected_material["label"]
-                st.success("教材を読み込みました。この下からAI先生に質問できます。")
+                st.success("読み込みました。下からAI先生に聞けます。")
             except Exception as exc:
                 st.warning(f"教材本文・字幕の自動取得ができませんでした：{exc}")
                 fallback = f"単元名: {unit['title']}\n学習目標: {unit['goal']}\n学習のポイント: {unit['point']}"
                 st.session_state[context_key] = fallback
                 st.session_state[label_key] = selected_material["label"] + "（単元情報を使用）"
-                st.info("動画・教材自体はそのまま利用できます。AI先生は登録済みの単元情報を基準に解説します。")
+                st.info("教材自体はそのまま使えます。AI先生は登録済みの単元情報を基準に説明します。")
 
         source_context = st.session_state.get(context_key, "")
         source_label = st.session_state.get(label_key, selected_material["label"])
 
         if source_context:
-            st.markdown("**AI先生への質問**")
             q1, q2, q3 = st.columns(3)
             material_prompt = None
             with q1:
-                if st.button("大事なところ3つ", use_container_width=True, key=f"mp1_{unit['id']}_{material_index}"):
+                if st.button("だいじな3つ", use_container_width=True, key=f"mp1_{unit['id']}_{material_index}"):
                     material_prompt = "この教材で大事なところを、小学生向けに3つだけ説明して。"
             with q2:
                 if st.button("もっとやさしく", use_container_width=True, key=f"mp2_{unit['id']}_{material_index}"):
                     material_prompt = "この教材の内容を、具体物や簡単な例を使ってもっとやさしく説明して。"
             with q3:
-                if st.button("確認問題を3問", use_container_width=True, key=f"mp3_{unit['id']}_{material_index}"):
+                if st.button("問題を3もん", use_container_width=True, key=f"mp3_{unit['id']}_{material_index}"):
                     material_prompt = "この教材の内容から確認問題を3問出して。答えは最初は見せないで。"
 
             material_question = st.text_area(
-                "教材について聞きたいこと",
-                placeholder="例：この考え方が分からない。もう一度ゆっくり説明して。",
+                "教材でわからないところ",
+                placeholder="ここを もう一ど おしえて！",
                 key=f"material_q_{unit['id']}_{material_index}",
             )
-            ask_material = st.button("教材についてAI先生に聞く", key=f"material_send_{unit['id']}_{material_index}")
+            ask_material = st.button("AI先生に聞く", key=f"material_send_{unit['id']}_{material_index}")
             request_text = material_prompt or (material_question.strip() if ask_material else None)
             if request_text:
                 try:
@@ -928,20 +1015,19 @@ def main():
                 except Exception as exc:
                     st.error(str(exc))
         else:
-            st.info("まず「この教材をAI先生に読み込む」を押してください。")
+            st.info("先に『この教材をAI先生に読んでもらう』を押してください。")
 
     with tab4:
-        st.subheader("答案写真をAI添削")
-        st.write("問題用紙やノートの写真をアップロードすると、この単元の学年に合わせて考え方を説明します。")
+        st.subheader("ノートや答案を見てもらう")
         uploaded = st.file_uploader(
-            "答案の写真",
+            "しゃしんを えらぶ",
             type=["png", "jpg", "jpeg", "webp"],
             key=f"upload_{unit['id']}",
         )
         if uploaded is not None:
-            st.image(uploaded, caption="添削する画像", use_container_width=True)
-            extra = st.text_input("補足（任意）", placeholder="例：答えをすぐ言わずヒントだけほしい", key=f"extra_{unit['id']}")
-            if st.button("この答案を添削する", type="primary", key=f"grade_{unit['id']}"):
+            st.image(uploaded, caption="この写真を見てもらいます", use_container_width=True)
+            extra = st.text_input("ひとこと（なくてもOK）", placeholder="ヒントだけほしい", key=f"extra_{unit['id']}")
+            if st.button("AI先生に見てもらう", type="primary", key=f"grade_{unit['id']}"):
                 try:
                     image_bytes = uploaded.getvalue()
                     with st.spinner("答案を確認しています"):
@@ -956,8 +1042,8 @@ def main():
                     st.error(str(exc))
 
     st.divider()
-    with st.expander("AI機能の設定"):
-        st.write("OpenAI APIキーを設定すると、AI先生・選定済み教材への質問・答案添削が使えます。キーはこのブラウザの現在のセッション内だけで使用します。Streamlit CloudではSecretsに `OPENAI_API_KEY` を設定する方法も使えます。")
+    with st.expander("おうちの方へ・AI設定"):
+        st.write("OpenAI APIキーを設定すると、AI先生・教材への質問・答案添削が使えます。")
         st.text_input("OpenAI API Key", type="password", key="openai_api_key")
         st.caption("この試作版はAI処理に gpt-5.6-luna を使用します。")
 
