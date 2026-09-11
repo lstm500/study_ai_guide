@@ -1,4 +1,5 @@
 import base64
+import html
 import os
 import re
 from html.parser import HTMLParser
@@ -32,6 +33,9 @@ OFFICIAL_PRACTICE = {
     1: "https://www.dokyoi.pref.hokkaido.lg.jp/hk/gks/ct/tangen1.html",
     2: "https://www.dokyoi.pref.hokkaido.lg.jp/hk/gks/ct/tangen2.html",
     3: "https://www.dokyoi.pref.hokkaido.lg.jp/hk/gks/ct/tangen3.html",
+    4: "https://www.dokyoi.pref.hokkaido.lg.jp/hk/gks/ct/tangen4.html",
+    5: "https://www.dokyoi.pref.hokkaido.lg.jp/hk/gks/ct/tangen5.html",
+    6: "https://www.dokyoi.pref.hokkaido.lg.jp/hk/gks/ct/tangen6.html",
 }
 
 UNITS = [
@@ -493,6 +497,135 @@ UNITS = [
     },
 ]
 
+
+def _learning_unit(unit_id, grade, order, domain, title, goal, prereq, starter):
+    """Create one consistent curriculum card for the expanded learning route."""
+    materials = [
+        {
+            "kind": "activity",
+            "label": "おうちで やってみよう",
+            "instruction": starter,
+        }
+    ]
+    if grade >= 1:
+        materials.extend(
+            [
+                {
+                    "kind": "web",
+                    "label": "eboard：算数の映像授業",
+                    "url": EBOARD_URL,
+                },
+                {
+                    "kind": "web",
+                    "label": f"北海道教育委員会：小学{grade}年 単元別問題",
+                    "url": OFFICIAL_PRACTICE[grade],
+                },
+            ]
+        )
+    return {
+        "id": unit_id,
+        "grade": grade,
+        "order": order,
+        "domain": domain,
+        "title": title,
+        "goal": goal,
+        "point": "できた速さではなく、物・絵・言葉・式を行き来して説明できることを大切にします。",
+        "prereq": prereq,
+        "materials": materials,
+    }
+
+
+# 5〜6歳は学校内容の前倒しではなく、具体物を使う数理体験から小1へ接続する。
+_EXPANDED_CURRICULUM = {
+    0: [
+        ("p-01", "A 数と計算", "1から5まで", "物を一つずつ対応させ、5までの個数を正しく数える。", "なし", "積み木を1〜5個ならべ、指で一つずつ触りながら数えよう。"),
+        ("p-02", "A 数と計算", "6から10まで", "10までの個数・順番・数字を結び付ける。", "1から5まで", "電車やミニカーを10個まで並べ、前から何番目かも言ってみよう。"),
+        ("p-03", "A 数と計算", "おなじ・ちがう・どちらが多い", "一対一対応を使って、同じ・多い・少ないを比べる。", "10まで数える", "2列の物を一つずつ向かい合わせ、どちらが多いか確かめよう。"),
+        ("p-04", "A 数と計算", "かずを分ける", "5や10を二つの数に分けたり、合わせたりする。", "10まで数える", "5個のおはじきを両手に隠して分け、右手と左手にいくつあるか当てよう。"),
+        ("p-05", "A 数と計算", "ふえる・へる", "具体的な場面で、加えることと取り去ることを理解する。", "かずを分ける", "お皿の3個に2個を足す、5個から1個を取る動きを言葉にしよう。"),
+        ("p-06", "B 図形", "かたちを見つける", "丸・三角・四角や立体の特徴を見つける。", "なし", "家の中から丸・三角・四角を三つずつ探し、似ている理由を話そう。"),
+        ("p-07", "C 測定", "ながさ・おもさ・かさ", "直接比べて、長い・重い・多く入るを判断する。", "同じ・ちがう", "鉛筆の端をそろえて長さを比べ、比べ方が公平か確かめよう。"),
+        ("p-08", "D データの活用", "なかま分け・ならび方", "色や形で分類し、簡単な規則を見つけて続ける。", "同じ・ちがう", "赤青赤青、丸三角丸三角の続きを作り、きまりを言葉にしよう。"),
+        ("p-09", "C 測定", "くらしの時刻とお金", "生活の中で○時を読み、硬貨を区別する。", "10まで数える", "時計で出発時刻を探し、10円玉を5枚まで数えてみよう。"),
+        ("p-10", "A 数と計算", "小1へのじゅんび", "数・形・比較を使う短い話を、自分の言葉で説明する。", "はじめの算数1〜9", "『3台の電車に2台きました』を物で作り、どう考えたか話そう。"),
+    ],
+    4: [
+        ("g4-01", "A 数と計算", "大きな数", "億・兆までの整数と十進位取りを理解する。", "万までの数", "新聞や時刻表から大きな数を見つけ、位ごとに区切って読もう。"),
+        ("g4-02", "A 数と計算", "わり算の筆算", "2〜3位数を1位数で割る筆算と余りを理解する。", "九九とわり算", "24個を3人で同じ数ずつ分け、式と筆算の意味を結び付けよう。"),
+        ("g4-03", "A 数と計算", "2けたでわる筆算", "2〜3位数を2位数で割り、商を見積もる。", "1位数で割る筆算", "156÷24の答えが何桁になりそうか、計算前に見積もろう。"),
+        ("g4-04", "A 数と計算", "計算のきまり", "四則混合、かっこ、交換・結合・分配の考えを使う。", "四則計算", "同じ答えになる二つの式を作り、どちらが計算しやすいか比べよう。"),
+        ("g4-05", "A 数と計算", "がい数と見積もり", "四捨五入と概数を、目的に応じて使う。", "大きな数", "買い物の合計を百円単位で見積もり、実際の合計と比べよう。"),
+        ("g4-06", "A 数と計算", "小数のしくみと計算", "小数の位取りと加減、整数との乗除を理解する。", "整数の位取り", "1mを10等分・100等分した長さを、小数で表そう。"),
+        ("g4-07", "A 数と計算", "分数", "同分母分数の加減と、真分数・仮分数・帯分数を理解する。", "簡単な分数", "折り紙を同じ大きさに分け、3/4と5/4を図で表そう。"),
+        ("g4-08", "B 図形", "角の大きさ", "度を単位として角を測り、描く。", "直角", "身の回りの角を直角より大きい・小さいに分け、分度器で確かめよう。"),
+        ("g4-09", "B 図形", "垂直・平行と四角形", "直線の関係と、平行四辺形・ひし形・台形の特徴を理解する。", "三角形・四角形", "紙に平行な2本線を引き、いろいろな四角形を作ろう。"),
+        ("g4-10", "B 図形", "直方体と立方体", "面・辺の関係、展開図、位置の表し方を理解する。", "箱の形", "空き箱を開いて展開図にし、向かい合う面に印を付けよう。"),
+        ("g4-11", "C 測定", "面積", "面積の単位と長方形・正方形の公式を理解する。", "長さと掛け算", "方眼で長方形を作り、1cm²が何個あるか数えて公式につなげよう。"),
+        ("g4-12", "D データの活用", "折れ線グラフと表", "変化を折れ線グラフに表し、特徴を読む。", "棒グラフ", "一日の気温を表にし、点を結んで変化が大きい所を探そう。"),
+        ("g4-13", "D データの活用", "変わり方", "伴って変わる二つの量を表や式で調べる。", "表と式", "正方形を横に増やすと棒の本数がどう変わるか、表にしよう。"),
+        ("g4-14", "A 数と計算", "そろばん", "そろばんで大きな数や小数を表し、加減する。", "位取り", "一の位を決め、同じ数字を整数と小数で置き比べよう。"),
+    ],
+    5: [
+        ("g5-01", "A 数と計算", "整数と小数", "整数・小数を10倍、100倍、1/10、1/100にした関係を理解する。", "小数の位取り", "3.47の数字カードを動かし、10倍と1/10の数を作ろう。"),
+        ("g5-02", "A 数と計算", "小数のかけ算", "小数×整数、小数×小数の意味と筆算を理解する。", "整数の掛け算・小数", "1m80円のひも2.5m分を図にして、式の意味を説明しよう。"),
+        ("g5-03", "A 数と計算", "小数のわり算", "小数÷整数、小数÷小数の意味と筆算を理解する。", "整数の割り算・小数", "2.4Lを0.6Lずつ分ける場面を図にしよう。"),
+        ("g5-04", "A 数と計算", "倍数と約数", "倍数・約数、公倍数・公約数を理解する。", "掛け算・割り算", "12個と18個を余りなく同じ人数に配れる人数を全部探そう。"),
+        ("g5-05", "A 数と計算", "分数の大きさとたし算・ひき算", "通分・約分を使い、異分母分数を加減する。", "同分母分数", "1/2と2/3を同じ大きさの図に直して比べよう。"),
+        ("g5-06", "A 数と計算", "分数と小数・整数", "分数・小数・整数の関係と、分数×÷整数を理解する。", "分数と小数", "3÷4を図・分数・小数の三つで表そう。"),
+        ("g5-07", "C 測定", "体積", "直方体・立方体の体積と単位の関係を理解する。", "面積・直方体", "1cm角の積み木を箱状に並べ、縦×横×高さとの関係を探そう。"),
+        ("g5-08", "C 測定", "平均", "平均の意味を、ならす考えで理解する。", "割り算", "高さの違う積み木の列を、合計を変えず同じ高さにならそう。"),
+        ("g5-09", "C 測定", "単位量あたりの大きさ", "混み具合や人口密度を、1当たりの量で比べる。", "平均・割り算", "面積と人数が違う二つの部屋の混み具合を比べる方法を考えよう。"),
+        ("g5-10", "B 図形", "合同な図形", "合同の意味と対応する辺・角を理解し、作図する。", "三角形・四角形・角", "同じ形の紙を裏返したり回したりし、重なる条件を話そう。"),
+        ("g5-11", "B 図形", "図形の角", "三角形・四角形・多角形の角の和を理解する。", "角の大きさ", "紙の三角形の角を切って一点に集め、何度になるか確かめよう。"),
+        ("g5-12", "B 図形", "面積", "平行四辺形・三角形・台形・ひし形の面積を求める。", "長方形の面積", "平行四辺形を切って長方形に変え、公式の理由を説明しよう。"),
+        ("g5-13", "B 図形", "正多角形と円", "正多角形の性質と円周率の意味を理解する。", "円・角", "円を使って正六角形を描き、辺の長さを比べよう。"),
+        ("g5-14", "B 図形", "角柱と円柱", "角柱・円柱の構成要素と見取図・展開図を理解する。", "直方体・円", "箱や筒の面を調べ、底面と側面の形を記録しよう。"),
+        ("g5-15", "D データの活用", "割合と帯・円グラフ", "割合・百分率を理解し、帯グラフや円グラフを読む。", "小数の割り算", "10個の物を色別に分け、全体を1として割合を表そう。"),
+        ("g5-16", "D データの活用", "変わり方", "簡単な比例関係を表・式から見つける。", "4年の変わり方", "同じ値段の品物の個数と代金を表にし、関係を式にしよう。"),
+    ],
+    6: [
+        ("g6-01", "A 数と計算", "文字と式", "数量をxなどの文字を使った式に表す。", "四則混合・変わり方", "値段が分からない品物をx円として、合計代金を式にしよう。"),
+        ("g6-02", "A 数と計算", "分数のかけ算", "分数×分数の意味と計算方法を理解する。", "分数×整数・約分", "2/3mの1/2を図で表し、式と答えを結び付けよう。"),
+        ("g6-03", "A 数と計算", "分数のわり算", "分数÷分数の意味と計算方法を理解する。", "分数の掛け算", "3/4Lを1/8Lずつ分ける場面を図と式で表そう。"),
+        ("g6-04", "D データの活用", "比", "二つの量の割合を比で表し、等しい比を理解する。", "割合・分数", "同じ味になるジュースと水の組合せを複数作り、比で表そう。"),
+        ("g6-05", "D データの活用", "比例と反比例", "比例・反比例を表、式、グラフで表す。", "5年の変わり方", "面積が24cm²の長方形で、縦と横の関係を表にしよう。"),
+        ("g6-06", "C 測定", "速さ", "速さ・道のり・時間の関係を理解する。", "単位量あたり・時間", "同じ道のりを進んだ二人を、時間から比べて説明しよう。"),
+        ("g6-07", "B 図形", "対称な図形", "線対称・点対称の性質を理解し、作図する。", "合同な図形", "紙を折って切った形から、対称の軸と対応する点を探そう。"),
+        ("g6-08", "B 図形", "円の面積", "円の面積の公式と、その根拠を理解する。", "円周率・面積", "円を細かい扇形に分けて並べ替え、どんな形に近づくか考えよう。"),
+        ("g6-09", "B 図形", "角柱・円柱の体積", "柱体の体積を底面積×高さで求める。", "直方体の体積・面積", "同じ底面の箱を積み、底面積×高さになる理由を話そう。"),
+        ("g6-10", "B 図形", "拡大図と縮図", "対応する辺・角を使って拡大図・縮図を理解する。", "比・合同", "簡単な地図で1cmが実際の何mかを決め、距離を求めよう。"),
+        ("g6-11", "D データの活用", "場合の数", "重なりや落ちがないよう、順序よく組合せを調べる。", "表・図", "3色から2色を選ぶ方法を、表や樹形図ですべて書こう。"),
+        ("g6-12", "D データの活用", "データの調べ方", "代表値、度数分布、柱状グラフを使ってデータを考察する。", "平均・グラフ", "二つの組の記録を、平均だけでなく散らばりも見て比べよう。"),
+        ("g6-13", "C 測定", "およその面積・体積と単位", "身近な形を基本図形とみなし、概測する。", "面積・体積・概数", "手のひらの面積を長方形や三角形とみなして見積もろう。"),
+        ("g6-14", "A 数と計算", "小学校算数のまとめ", "数・量・図形・データを組み合わせて問題を解き、説明する。", "小1〜小6の主要単元", "一つの問題を図・式・言葉の三通りで説明し、最も伝わる方法を選ぼう。"),
+    ],
+}
+
+for _grade, _rows in _EXPANDED_CURRICULUM.items():
+    for _order, (_unit_id, _domain, _title, _goal, _prereq, _starter) in enumerate(_rows, 1):
+        UNITS.append(
+            _learning_unit(
+                _unit_id,
+                _grade,
+                _order,
+                _domain,
+                _title,
+                _goal,
+                _prereq,
+                _starter,
+            )
+        )
+
+COURSE_LABELS = {
+    0: "はじめ（5〜6歳）",
+    1: "小1",
+    2: "小2",
+    3: "小3",
+    4: "小4",
+    5: "小5",
+    6: "小6",
+}
+
 DOMAIN_SHORT = {
     "A 数と計算": "数と計算",
     "B 図形": "図形",
@@ -780,6 +913,39 @@ def inject_css():
         .st-key-study_home_top {margin-bottom: 10px;}
         .st-key-study_home_bottom {margin-top: 16px;}
 
+        .starter-card {
+            border: 1.5px solid #f0cf7a;
+            border-radius: 16px;
+            padding: 15px 16px;
+            background: #fffaf0;
+            color: var(--kid-ink);
+            font-size: 1.05rem;
+            line-height: 1.7;
+            margin-bottom: 10px;
+        }
+        .starter-label {
+            color: #8a6414;
+            font-size: .88rem;
+            font-weight: 800;
+            margin-bottom: .25rem;
+        }
+        .next-unit {
+            border-left: 5px solid #6f8ee8;
+            border-radius: 12px;
+            padding: 10px 13px;
+            background: var(--kid-blue-soft);
+            color: var(--kid-ink);
+            margin: .6rem 0 1rem 0;
+            font-weight: 700;
+        }
+        .ai-answer {
+            border: 1.5px solid var(--kid-line);
+            border-radius: 16px;
+            padding: 14px 16px;
+            background: #fff;
+            line-height: 1.75;
+        }
+
         @media (max-width: 700px) {
             .block-container {
                 padding-top: 3.55rem !important;
@@ -867,20 +1033,23 @@ def ask_openai(text, unit, source_context=None, source_label=None, image_bytes=N
     if client is None:
         raise RuntimeError("OpenAI APIキーが設定されていません。")
 
-    grade = unit["grade"]
+    grade = int(unit["grade"])
+    learner = "5〜6歳" if grade == 0 else f"小学{grade}年生"
     base_instructions = f"""
-あなたは小学{grade}年生専任の算数教師です。
+あなたは{learner}専任の算数サポーターです。
 学習単元は「{unit['title']}」です。
 到達目標は「{unit['goal']}」です。
 
 ルール:
-- 小学{grade}年生が理解できる日本語を使う。
+- {learner}が理解できる日本語を使う。
 - 1文を短くし、難しい専門用語を避ける。
-- 正解だけを先に言わず、考え方を1段ずつ示す。
+- 正解を最初に言わず、短いヒントを一つだけ出して本人の答えを待つ。
 - 間違いを責めない。どこまでは合っているかを明確にする。
-- 必要なら図の代わりに、●や□、数直線の簡単な文字表現を使う。
+- 5〜6歳には、積み木・おはじき・指など具体物を使う遊びを優先する。
+- 必要なら図の代わりに、●や□、簡単な数直線を使う。
 - 文章題では『分かっていること』『求めること』『式』を分ける。
 - 学年外の高度な公式へ飛ばない。
+- 返答は一度に長くしすぎず、原則120字以内にする。
 """.strip()
 
     if source_context:
@@ -1012,6 +1181,7 @@ def fetch_web_text(url):
 
 def material_type_label(kind):
     return {
+        "activity": "体験ミニ学習",
         "eboard": "映像授業＋確認問題",
         "youtube": "解説動画",
         "web": "Web教材・プリント",
@@ -1020,6 +1190,7 @@ def material_type_label(kind):
 
 def material_note(kind):
     return {
+        "activity": "身近な物を使って、考え方を体験します。",
         "eboard": "この単元の主教材として使用します。短い映像授業と確認問題があります。",
         "youtube": "別の見せ方で理解を補う補助動画です。",
         "web": "図・プリント・補助解説として使います。",
@@ -1287,7 +1458,13 @@ def _render_standard_material(unit, material, material_index, completed_units, c
     token = _safe_widget_token(completion_key)
 
     with st.container(key=f"material_row_{state}_{token}"):
-        if kind == "youtube":
+        if kind == "activity":
+            instruction = html.escape(str(material.get("instruction") or "").strip())
+            st.markdown(
+                f'<div class="starter-card"><div class="starter-label">👐 まずは ためそう</div>{instruction}</div>',
+                unsafe_allow_html=True,
+            )
+        elif kind == "youtube":
             with st.container(key=f"lesson_action_{state}_{token}"):
                 st.link_button(f"▶ {label}", url, use_container_width=True)
             st.video(url)
@@ -1307,6 +1484,66 @@ def material_buttons(unit, completed_units, completed_materials):
                 _render_eboard_material(unit, material, material_index, completed_units, completed_materials)
             else:
                 _render_standard_material(unit, material, material_index, completed_units, completed_materials)
+
+
+def render_ai_support(unit):
+    """Show optional AI hints and image feedback without blocking the core curriculum."""
+    with st.expander("🤖 AIせんせいに きく・しゃしんで みてもらう"):
+        if get_client() is None:
+            st.info("この機能を使うには、おうちの方がトップページの設定でAPIキーを登録します。教材を見る機能はそのまま使えます。")
+            return
+
+        question_tab, photo_tab = st.tabs(["ことばで きく", "しゃしんで みてもらう"])
+        unit_token = _safe_widget_token(unit["id"])
+
+        with question_tab:
+            question = st.text_area(
+                "わからないことを かいてね",
+                placeholder="どうして こうなるの？",
+                key=f"ai_question_{unit_token}",
+                height=92,
+            )
+            if st.button("ヒントを もらう", use_container_width=True, key=f"ask_ai_{unit_token}"):
+                if not question.strip():
+                    st.warning("ききたいことを かいてね。")
+                else:
+                    try:
+                        with st.spinner("かんがえています…"):
+                            st.session_state[f"ai_answer_{unit_token}"] = ask_openai(question, unit)
+                    except Exception as exc:
+                        st.error(f"AIせんせいを呼べませんでした。おうちの方が設定を確認してください。（{exc}）")
+            answer = st.session_state.get(f"ai_answer_{unit_token}")
+            if answer:
+                st.markdown(
+                    '<div class="ai-answer">' + html.escape(str(answer)).replace("\n", "<br>") + "</div>",
+                    unsafe_allow_html=True,
+                )
+
+        with photo_tab:
+            uploaded = st.file_uploader(
+                "もんだい・ノートの しゃしん",
+                type=["jpg", "jpeg", "png", "webp"],
+                key=f"answer_photo_{unit_token}",
+            )
+            if uploaded is not None:
+                st.image(uploaded, caption="みてもらう しゃしん", use_container_width=True)
+                if st.button("このしゃしんを みてもらう", use_container_width=True, key=f"check_photo_{unit_token}"):
+                    try:
+                        with st.spinner("ていねいに みています…"):
+                            st.session_state[f"photo_answer_{unit_token}"] = ask_openai(
+                                "まずヒントを一つください。",
+                                unit,
+                                image_bytes=uploaded.getvalue(),
+                                image_mime=uploaded.type,
+                            )
+                    except Exception as exc:
+                        st.error(f"しゃしんを確認できませんでした。おうちの方が設定を確認してください。（{exc}）")
+            photo_answer = st.session_state.get(f"photo_answer_{unit_token}")
+            if photo_answer:
+                st.markdown(
+                    '<div class="ai-answer">' + html.escape(str(photo_answer)).replace("\n", "<br>") + "</div>",
+                    unsafe_allow_html=True,
+                )
 
 def grade_units(grade):
     return sorted([u for u in UNITS if u["grade"] == grade], key=lambda x: x["order"])
@@ -1329,7 +1566,7 @@ def apply_requested_home_reset():
     if not bool(st.session_state.get("_reset_to_home_requested")):
         return
     # Keep only learning progress and the parent-entered API key. Everything else is UI state.
-    keep_keys = {"completed_units", "completed_materials"}
+    keep_keys = {"completed_units", "completed_materials", "openai_api_key", "home_grade_value"}
     for key in list(st.session_state.keys()):
         if key not in keep_keys:
             st.session_state.pop(key, None)
@@ -1361,29 +1598,40 @@ def main():
     # ------------------------------------------------------------
     if selected_unit is None:
         st.markdown('<div class="main-title">🧮 さんすうナビ</div>', unsafe_allow_html=True)
+        st.caption("5〜6歳の『はじめ』から、小学6年生まで。できた所から一歩ずつ進みます。")
         st.markdown('<div class="home-question">きょうは どれを やる？</div>', unsafe_allow_html=True)
 
-        default_grade = int(st.session_state.get("home_grade_value") or 1)
-        if default_grade not in {1, 2, 3}:
-            default_grade = 3
+        grade_options = list(COURSE_LABELS)
+        saved_grade = st.session_state.get("home_grade_value")
+        default_grade = int(saved_grade) if saved_grade is not None else 0
+        if default_grade not in grade_options:
+            default_grade = 0
         with st.container(key="home_grade"):
             grade = st.radio(
-                "がくねん",
-                [1, 2, 3],
+                "コース",
+                grade_options,
                 horizontal=True,
-                index=[1, 2, 3].index(default_grade),
-                format_func=lambda x: f"小{x}",
+                index=grade_options.index(default_grade),
+                format_func=lambda x: COURSE_LABELS[x],
                 key="home_grade_radio",
             )
         st.session_state["home_grade_value"] = grade
 
         units = grade_units(grade)
         done_count = sum(1 for u in units if u["id"] in completed)
+        next_unit = next((u for u in units if u["id"] not in completed), None)
         st.markdown(
             f'<div class="progress-line">できた　{done_count} / {len(units)}</div>',
             unsafe_allow_html=True,
         )
         st.progress(done_count / max(1, len(units)))
+        if next_unit:
+            st.markdown(
+                f'<div class="next-unit">つぎの おすすめ　{next_unit["order"]:02d}　{html.escape(next_unit["title"])}</div>',
+                unsafe_allow_html=True,
+            )
+        elif units:
+            st.success("このコースは ぜんぶ できました！")
 
         with st.container(key="unit_picker_grid"):
             cols = st.columns(2)
@@ -1408,6 +1656,9 @@ def main():
                 "カリキュラムの骨格は文部科学省『小学校学習指導要領（平成29年告示）解説 算数編』に合わせています。"
                 "教科書会社によって単元名・学習順は異なるため、アプリでは内容を学習しやすい単位に整理しています。"
             )
+            st.write(
+                "5〜6歳コースは学年の先取りを判定する試験ではありません。具体物を動かし、本人が言葉で説明できることを優先します。"
+            )
             c1, c2, c3 = st.columns(3)
             with c1:
                 st.link_button("文科省", MEXT_URL, use_container_width=True)
@@ -1415,6 +1666,16 @@ def main():
                 st.link_button("算数編 PDF", MEXT_MATH_PDF, use_container_width=True)
             with c3:
                 st.link_button("eboard", EBOARD_URL, use_container_width=True)
+
+            st.divider()
+            st.caption("AIせんせい（任意）")
+            st.text_input(
+                "OpenAI APIキー",
+                type="password",
+                key="openai_api_key",
+                help="質問へのヒントと答案画像の確認にだけ使用します。未設定でも教材・進捗機能は使えます。",
+            )
+            st.caption("API利用料はChatGPT Workの利用枠とは別です。公開時は画面入力ではなく、アプリのSecrets設定を推奨します。")
         return
 
     # ------------------------------------------------------------
@@ -1423,6 +1684,7 @@ def main():
     unit = selected_unit
     grade = int(unit["grade"])
     units = grade_units(grade)
+    course_chip = "5〜6歳" if grade == 0 else f"小学{grade}年"
 
     render_home_reset_button("top")
 
@@ -1430,7 +1692,7 @@ def main():
         f"""
         <div class="unit-card unit-card-compact">
           <div class="unit-title">{unit['order']:02d}. {unit['title']}</div>
-          <span class="chip">小学{unit['grade']}年</span><span class="chip">{DOMAIN_SHORT.get(unit['domain'], unit['domain'])}</span>
+          <span class="chip">{course_chip}</span><span class="chip">{DOMAIN_SHORT.get(unit['domain'], unit['domain'])}</span>
         </div>
         """,
         unsafe_allow_html=True,
@@ -1440,6 +1702,13 @@ def main():
     migrate_legacy_unit_completion(unit, completed, completed_materials)
     sync_unit_completion(unit, completed, completed_materials)
     material_buttons(unit, completed, completed_materials)
+
+    render_ai_support(unit)
+
+    with st.expander("おうちの方へ：ねらいと見守り方"):
+        st.markdown(f"**ねらい**　{unit['goal']}")
+        st.markdown(f"**先にできるとよいこと**　{unit['prereq']}")
+        st.markdown(f"**見守り方**　{unit['point']}")
 
     render_home_reset_button("bottom")
 
